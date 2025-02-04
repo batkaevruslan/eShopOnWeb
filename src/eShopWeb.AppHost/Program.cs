@@ -6,4 +6,7 @@ builder
 builder
     .AddProject<Projects.Web>(nameof(Projects.Web).ToLower());
 
+builder
+    .AddProject<Projects.BlazorAdmin>(nameof(Projects.BlazorAdmin).ToLower());
+
 builder.Build().Run();
