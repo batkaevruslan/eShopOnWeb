@@ -8,5 +8,5 @@ public class CatalogTypeResponse : ILookupDataResponse<CatalogType>
 {
 
     [JsonPropertyName("CatalogTypes")]
-    public List<CatalogType> List { get; set; } = new List<CatalogType>();
+    public List<CatalogType> List { get; set; } = new();
 }

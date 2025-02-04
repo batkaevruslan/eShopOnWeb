@@ -1,6 +1,6 @@
 ﻿namespace BlazorAdmin.JavaScript;
 
-public static class JSInteropConstants
+public static class JsInteropConstants
 {
     public static string DeleteCookie => "deleteCookie";
     public static string GetCookie => "getCookie";

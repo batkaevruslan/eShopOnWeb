@@ -19,7 +19,7 @@ public class CreateCatalogItemEndpoint(IRepository<CatalogItem> itemRepository, 
     public override void Configure()
     {
         Post("api/catalog-items");
-        Roles(BlazorShared.Authorization.Constants.Roles.ADMINISTRATORS);
+        Roles(BlazorShared.Authorization.Constants.Roles.Administrators);
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Description(d =>
             d.Produces<CreateCatalogItemResponse>()

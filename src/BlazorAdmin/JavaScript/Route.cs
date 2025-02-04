@@ -14,6 +14,6 @@ public class Route
 
     public async Task RouteOutside(string path)
     {
-        await _jsRuntime.InvokeAsync<string>(JSInteropConstants.RouteOutside, path);
+        await _jsRuntime.InvokeAsync<string>(JsInteropConstants.RouteOutside, path);
     }
 }

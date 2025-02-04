@@ -62,9 +62,9 @@ public class AccountControllerSignIn : IClassFixture<TestApplication>
 
         var keyValues = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("Email", "demouser@microsoft.com"),
-            new KeyValuePair<string, string>("Password", "Pass@word1"),
-            new KeyValuePair<string, string>(WebPageHelpers.TokenTag, WebPageHelpers.GetRequestVerificationToken(stringResponse1))
+            new("Email", "demouser@microsoft.com"),
+            new("Password", "Pass@word1"),
+            new(WebPageHelpers._tokenTag, WebPageHelpers.GetRequestVerificationToken(stringResponse1))
         };
         var formContent = new FormUrlEncodedContent(keyValues);
 
@@ -82,9 +82,9 @@ public class AccountControllerSignIn : IClassFixture<TestApplication>
         var stringResponse1 = await getResponse.Content.ReadAsStringAsync();
         var keyValues = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("Email", "demouser@microsoft.com"),
-            new KeyValuePair<string, string>("Password", "Pass@word1"),
-            new KeyValuePair<string, string>(WebPageHelpers.TokenTag, WebPageHelpers.GetRequestVerificationToken(stringResponse1))
+            new("Email", "demouser@microsoft.com"),
+            new("Password", "Pass@word1"),
+            new(WebPageHelpers._tokenTag, WebPageHelpers.GetRequestVerificationToken(stringResponse1))
         };
         var formContent = new FormUrlEncodedContent(keyValues);
         await Client.PostAsync("/identity/account/login", formContent);
@@ -97,9 +97,9 @@ public class AccountControllerSignIn : IClassFixture<TestApplication>
         //Update phone number
         var updateProfileValues = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("Email", "demouser@microsoft.com"),
-            new KeyValuePair<string, string>("PhoneNumber", "03656565"),
-            new KeyValuePair<string, string>(WebPageHelpers.TokenTag, WebPageHelpers.GetRequestVerificationToken(stringProfileResponse))
+            new("Email", "demouser@microsoft.com"),
+            new("PhoneNumber", "03656565"),
+            new(WebPageHelpers._tokenTag, WebPageHelpers.GetRequestVerificationToken(stringProfileResponse))
         };
         var updateProfileContent = new FormUrlEncodedContent(updateProfileValues);
         var postProfileResponse = await Client.PostAsync("/manage/my-account", updateProfileContent);

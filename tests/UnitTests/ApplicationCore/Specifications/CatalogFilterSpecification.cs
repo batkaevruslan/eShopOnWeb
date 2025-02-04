@@ -26,11 +26,11 @@ public class CatalogFilterSpecification
     {
         return new List<CatalogItem>()
             {
-                new CatalogItem(1, 1, "Description", "Name", 0, "FakePath"),
-                new CatalogItem(2, 1, "Description", "Name", 0, "FakePath"),
-                new CatalogItem(3, 1, "Description", "Name", 0, "FakePath"),
-                new CatalogItem(1, 2, "Description", "Name", 0, "FakePath"),
-                new CatalogItem(2, 2, "Description", "Name", 0, "FakePath"),
+                new(1, 1, "Description", "Name", 0, "FakePath"),
+                new(2, 1, "Description", "Name", 0, "FakePath"),
+                new(3, 1, "Description", "Name", 0, "FakePath"),
+                new(1, 2, "Description", "Name", 0, "FakePath"),
+                new(2, 2, "Description", "Name", 0, "FakePath"),
             };
     }
 }

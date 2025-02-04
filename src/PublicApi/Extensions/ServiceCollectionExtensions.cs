@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
 
     public static void AddJwtAuthentication(this IServiceCollection services)
     {
-        var key = Encoding.ASCII.GetBytes(AuthorizationConstants.JWT_SECRET_KEY);
+        var key = Encoding.ASCII.GetBytes(AuthorizationConstants.JwtSecretKey);
 
         services.AddAuthentication(config =>
         {

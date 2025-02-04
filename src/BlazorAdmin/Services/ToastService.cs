@@ -15,7 +15,7 @@ public class ToastService : IDisposable
 {
     public event Action<string, ToastLevel> OnShow;
     public event Action OnHide;
-    private Timer Countdown;
+    private Timer _countdown;
     public void ShowToast(string message, ToastLevel level)
     {
         OnShow?.Invoke(message, level);
@@ -24,23 +24,23 @@ public class ToastService : IDisposable
     private void StartCountdown()
     {
         SetCountdown();
-        if (Countdown.Enabled)
+        if (_countdown.Enabled)
         {
-            Countdown.Stop();
-            Countdown.Start();
+            _countdown.Stop();
+            _countdown.Start();
         }
         else
         {
-            Countdown.Start();
+            _countdown.Start();
         }
     }
     private void SetCountdown()
     {
-        if (Countdown == null)
+        if (_countdown == null)
         {
-            Countdown = new Timer(3000);
-            Countdown.Elapsed += HideToast;
-            Countdown.AutoReset = false;
+            _countdown = new Timer(3000);
+            _countdown.Elapsed += HideToast;
+            _countdown.AutoReset = false;
         }
     }
     private void HideToast(object source, ElapsedEventArgs args)
@@ -49,6 +49,6 @@ public class ToastService : IDisposable
     }
     public void Dispose()
     {
-        Countdown?.Dispose();
+        _countdown?.Dispose();
     }
 }

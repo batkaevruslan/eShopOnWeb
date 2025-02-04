@@ -23,7 +23,7 @@ public class IndexModel : PageModel
         _itemRepository = itemRepository;
     }
 
-    public BasketViewModel BasketModel { get; set; } = new BasketViewModel();
+    public BasketViewModel BasketModel { get; set; } = new();
 
     public async Task OnGet()
     {
@@ -76,9 +76,9 @@ public class IndexModel : PageModel
             return Request.HttpContext.User.Identity.Name!;
         }
 
-        if (Request.Cookies.ContainsKey(Constants.BASKET_COOKIENAME))
+        if (Request.Cookies.ContainsKey(Constants.BasketCookiename))
         {
-            userName = Request.Cookies[Constants.BASKET_COOKIENAME];
+            userName = Request.Cookies[Constants.BasketCookiename];
 
             if (!Request.HttpContext.User.Identity.IsAuthenticated)
             {
@@ -93,7 +93,7 @@ public class IndexModel : PageModel
         userName = Guid.NewGuid().ToString();
         var cookieOptions = new CookieOptions { IsEssential = true };
         cookieOptions.Expires = DateTime.Today.AddYears(10);
-        Response.Cookies.Append(Constants.BASKET_COOKIENAME, userName, cookieOptions);
+        Response.Cookies.Append(Constants.BasketCookiename, userName, cookieOptions);
 
         return userName;
     }

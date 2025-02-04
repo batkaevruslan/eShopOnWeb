@@ -7,5 +7,5 @@ namespace BlazorShared.Models;
 public class CatalogBrandResponse : ILookupDataResponse<CatalogBrand>
 {
     [JsonPropertyName("CatalogBrands")]
-    public List<CatalogBrand> List { get; set; } = new List<CatalogBrand>();
+    public List<CatalogBrand> List { get; set; } = new();
 }

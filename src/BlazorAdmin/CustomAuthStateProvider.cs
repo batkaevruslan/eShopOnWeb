@@ -13,13 +13,13 @@ namespace BlazorAdmin;
 public class CustomAuthStateProvider : AuthenticationStateProvider
 {
     // TODO: Get Default Cache Duration from Config
-    private static readonly TimeSpan UserCacheRefreshInterval = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan _userCacheRefreshInterval = TimeSpan.FromSeconds(60);
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<CustomAuthStateProvider> _logger;
 
     private DateTimeOffset _userLastCheck = DateTimeOffset.FromUnixTimeSeconds(0);
-    private ClaimsPrincipal _cachedUser = new ClaimsPrincipal(new ClaimsIdentity());
+    private ClaimsPrincipal _cachedUser = new(new ClaimsIdentity());
 
     public CustomAuthStateProvider(HttpClient httpClient,
         ILogger<CustomAuthStateProvider> logger)
@@ -36,7 +36,7 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
     private async ValueTask<ClaimsPrincipal> GetUser(bool useCache = false)
     {
         var now = DateTimeOffset.Now;
-        if (useCache && now < _userLastCheck + UserCacheRefreshInterval)
+        if (useCache && now < _userLastCheck + _userCacheRefreshInterval)
         {
             return _cachedUser;
         }

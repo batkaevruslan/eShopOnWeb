@@ -1,10 +1,10 @@
 ﻿@inject AuthenticationStateProvider AuthStateProvider
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRuntime
 
 @inherits BlazorAdmin.Helpers.BlazorLayoutComponent
 
 
-<AuthorizeView Roles=@BlazorShared.Authorization.Constants.Roles.ADMINISTRATORS>
+<AuthorizeView Roles=@BlazorShared.Authorization.Constants.Roles.Administrators>
     <div class="sidebar">
         <NavMenu />
     </div>
@@ -31,7 +31,7 @@
 
                 if (authState.User == null)
                 {
-                    await new Route(JSRuntime).RouteOutside("/Identity/Account/Login");
+                    await new Route(JsRuntime).RouteOutside("/Identity/Account/Login");
                 }
                 CallRequestRefresh();
             }

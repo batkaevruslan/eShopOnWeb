@@ -61,7 +61,7 @@ public static class ServiceCollectionExtensions
 
     public static void AddBlazor(this IServiceCollection services, ConfigurationManager configuration)
     {
-        var configSection = configuration.GetRequiredSection(BaseUrlConfiguration.CONFIG_NAME);
+        var configSection = configuration.GetRequiredSection(BaseUrlConfiguration.ConfigName);
         services.Configure<BaseUrlConfiguration>(configSection);
 
         // Blazor Admin Required Services for Prerendering

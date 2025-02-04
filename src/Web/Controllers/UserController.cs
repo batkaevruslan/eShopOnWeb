@@ -61,7 +61,7 @@ public class UserController : ControllerBase
     {
         if (claimsPrincipal.Identity == null || claimsPrincipal.Identity.Name == null || !claimsPrincipal.Identity.IsAuthenticated)
         {
-            return UserInfo.Anonymous;
+            return UserInfo._anonymous;
         }
 
         var userInfo = new UserInfo

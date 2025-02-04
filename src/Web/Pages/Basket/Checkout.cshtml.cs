@@ -34,7 +34,7 @@ public class CheckoutModel : PageModel
         _logger = logger;
     }
 
-    public BasketViewModel BasketModel { get; set; } = new BasketViewModel();
+    public BasketViewModel BasketModel { get; set; } = new();
 
     public async Task OnGet()
     {
@@ -83,15 +83,15 @@ public class CheckoutModel : PageModel
 
     private void GetOrSetBasketCookieAndUserName()
     {
-        if (Request.Cookies.ContainsKey(Constants.BASKET_COOKIENAME))
+        if (Request.Cookies.ContainsKey(Constants.BasketCookiename))
         {
-            _username = Request.Cookies[Constants.BASKET_COOKIENAME];
+            _username = Request.Cookies[Constants.BasketCookiename];
         }
         if (_username != null) return;
 
         _username = Guid.NewGuid().ToString();
         var cookieOptions = new CookieOptions();
         cookieOptions.Expires = DateTime.Today.AddYears(10);
-        Response.Cookies.Append(Constants.BASKET_COOKIENAME, _username, cookieOptions);
+        Response.Cookies.Append(Constants.BasketCookiename, _username, cookieOptions);
     }
 }

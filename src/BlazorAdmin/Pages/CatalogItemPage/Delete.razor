@@ -1,5 +1,5 @@
 ﻿@inject ILogger<Delete> Logger
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRuntime
 @inject ICatalogItemService CatalogItemService
 
 @inherits BlazorAdmin.Helpers.BlazorComponent
@@ -103,7 +103,7 @@
     private string _modalDisplay = "none;";
     private string _modalClass = "";
     private bool _showDeleteModal = false;
-    private CatalogItem _item = new CatalogItem();
+    private CatalogItem _item = new();
 
     private async Task DeleteClick(int id)
     {
@@ -119,7 +119,7 @@
     {
         Logger.LogInformation("Now loading... /Catalog/Delete/{Id}", id);
 
-        await new Css(JSRuntime).HideBodyOverflow();
+        await new Css(JsRuntime).HideBodyOverflow();
 
         _item = await CatalogItemService.GetById(id);
 
@@ -132,7 +132,7 @@
 
     private async Task Close()
     {
-        await new Css(JSRuntime).ShowBodyOverflow();
+        await new Css(JsRuntime).ShowBodyOverflow();
         _modalDisplay = "none";
         _modalClass = "";
         _showDeleteModal = false;

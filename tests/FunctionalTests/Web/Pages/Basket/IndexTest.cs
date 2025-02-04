@@ -30,9 +30,9 @@ public class IndexTest : IClassFixture<TestApplication>
         // Add Item to Cart
         var keyValues = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("id", "2"),
-            new KeyValuePair<string, string>("name", "shirt"),
-            new KeyValuePair<string, string>("__RequestVerificationToken", token)
+            new("id", "2"),
+            new("name", "shirt"),
+            new("__RequestVerificationToken", token)
         };
         var formContent = new FormUrlEncodedContent(keyValues);
         var postResponse = await Client.PostAsync("/basket/index", formContent);
@@ -43,9 +43,9 @@ public class IndexTest : IClassFixture<TestApplication>
         //Update
         var updateKeyValues = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("Items[0].Id", WebPageHelpers.GetId(stringResponse)),
-            new KeyValuePair<string, string>("Items[0].Quantity", "49"),
-            new KeyValuePair<string, string>(WebPageHelpers.TokenTag, WebPageHelpers.GetRequestVerificationToken(stringResponse))
+            new("Items[0].Id", WebPageHelpers.GetId(stringResponse)),
+            new("Items[0].Quantity", "49"),
+            new(WebPageHelpers._tokenTag, WebPageHelpers.GetRequestVerificationToken(stringResponse))
         };
         var updateContent = new FormUrlEncodedContent(updateKeyValues);
         var updateResponse = await Client.PostAsync("/basket/update", updateContent);
@@ -70,9 +70,9 @@ public class IndexTest : IClassFixture<TestApplication>
         // Add Item to Cart
         var keyValues = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("id", "2"),
-            new KeyValuePair<string, string>("name", "shirt"),
-            new KeyValuePair<string, string>("__RequestVerificationToken", token)
+            new("id", "2"),
+            new("name", "shirt"),
+            new("__RequestVerificationToken", token)
         };
         var formContent = new FormUrlEncodedContent(keyValues);
         var postResponse = await Client.PostAsync("/basket/index", formContent);
@@ -83,9 +83,9 @@ public class IndexTest : IClassFixture<TestApplication>
         //Update
         var updateKeyValues = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("Items[0].Id", WebPageHelpers.GetId(stringResponse)),
-            new KeyValuePair<string, string>("Items[0].Quantity", "0"),
-            new KeyValuePair<string, string>(WebPageHelpers.TokenTag, WebPageHelpers.GetRequestVerificationToken(stringResponse))
+            new("Items[0].Id", WebPageHelpers.GetId(stringResponse)),
+            new("Items[0].Quantity", "0"),
+            new(WebPageHelpers._tokenTag, WebPageHelpers.GetRequestVerificationToken(stringResponse))
         };
         var updateContent = new FormUrlEncodedContent(updateKeyValues);
         var updateResponse = await Client.PostAsync("/basket/update", updateContent);

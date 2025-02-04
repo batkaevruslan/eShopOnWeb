@@ -45,9 +45,9 @@ public class Basket : ViewComponent
 
     private string? GetAnnonymousIdFromCookie()
     {
-        if (Request.Cookies.ContainsKey(Constants.BASKET_COOKIENAME))
+        if (Request.Cookies.ContainsKey(Constants.BasketCookiename))
         {
-            var id = Request.Cookies[Constants.BASKET_COOKIENAME];
+            var id = Request.Cookies[Constants.BasketCookiename];
 
             if (Guid.TryParse(id, out var _))
             {

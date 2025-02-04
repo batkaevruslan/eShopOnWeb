@@ -13,5 +13,5 @@ public class ListCatalogTypesResponse : BaseResponse
     {
     }
 
-    public List<CatalogTypeDto> CatalogTypes { get; set; } = new List<CatalogTypeDto>();
+    public List<CatalogTypeDto> CatalogTypes { get; set; } = new();
 }

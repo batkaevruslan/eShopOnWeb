@@ -14,11 +14,11 @@ public class Cookies
 
     public async Task DeleteCookie(string name)
     {
-        await _jsRuntime.InvokeAsync<string>(JSInteropConstants.DeleteCookie, name);
+        await _jsRuntime.InvokeAsync<string>(JsInteropConstants.DeleteCookie, name);
     }
 
     public async Task<string> GetCookie(string name)
     {
-        return await _jsRuntime.InvokeAsync<string>(JSInteropConstants.GetCookie, name);
+        return await _jsRuntime.InvokeAsync<string>(JsInteropConstants.GetCookie, name);
     }
 }

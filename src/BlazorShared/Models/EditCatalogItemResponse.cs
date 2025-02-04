@@ -2,5 +2,5 @@
 
 public class EditCatalogItemResult
 {
-    public CatalogItem CatalogItem { get; set; } = new CatalogItem();
+    public CatalogItem CatalogItem { get; set; } = new();
 }
