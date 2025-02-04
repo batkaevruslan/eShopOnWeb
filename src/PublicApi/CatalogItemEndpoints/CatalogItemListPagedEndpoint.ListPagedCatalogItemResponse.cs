@@ -13,6 +13,6 @@ public class ListPagedCatalogItemResponse : BaseResponse
     {
     }
 
-    public List<CatalogItemDto> CatalogItems { get; set; } = new List<CatalogItemDto>();
+    public List<CatalogItemDto> CatalogItems { get; set; } = new();
     public int PageCount { get; set; }
 }

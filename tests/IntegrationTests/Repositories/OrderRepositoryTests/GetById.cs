@@ -13,7 +13,7 @@ public class GetById
 {
     private readonly CatalogContext _catalogContext;
     private readonly EfRepository<Order> _orderRepository;
-    private OrderBuilder OrderBuilder { get; } = new OrderBuilder();
+    private OrderBuilder OrderBuilder { get; } = new();
     private readonly ITestOutputHelper _output;
     public GetById(ITestOutputHelper output)
     {
@@ -40,6 +40,6 @@ public class GetById
         // Note: Using InMemoryDatabase OrderItems is available. Will be null if using SQL DB.
         // Use the OrderWithItemsByIdSpec instead of just GetById to get the full aggregate
         var firstItem = orderFromRepo.OrderItems.FirstOrDefault();
-        Assert.Equal(OrderBuilder.TestUnits, firstItem.Units);
+        Assert.Equal(OrderBuilder._testUnits, firstItem.Units);
     }
 }

@@ -15,14 +15,14 @@ public class AppIdentityDbContextSeed
             identityDbContext.Database.Migrate();
         }
 
-        await roleManager.CreateAsync(new IdentityRole(BlazorShared.Authorization.Constants.Roles.ADMINISTRATORS));
+        await roleManager.CreateAsync(new IdentityRole(BlazorShared.Authorization.Constants.Roles.Administrators));
         await roleManager.CreateAsync(new IdentityRole(BlazorShared.Authorization.Constants.Roles.PRODUCT_MANAGERS));
 
         var defaultUser = new ApplicationUser { UserName = "demouser@microsoft.com", Email = "demouser@microsoft.com" };
-        await userManager.CreateAsync(defaultUser, AuthorizationConstants.DEFAULT_PASSWORD);
+        await userManager.CreateAsync(defaultUser, AuthorizationConstants.DefaultPassword);
 
         var productManager = new ApplicationUser { UserName = "productmgr@microsoft.com", Email = "productmgr@microsoft.com" };
-        await userManager.CreateAsync(productManager, AuthorizationConstants.DEFAULT_PASSWORD);
+        await userManager.CreateAsync(productManager, AuthorizationConstants.DefaultPassword);
         productManager = await userManager.FindByNameAsync(productManager.UserName);
         if (productManager != null)
         {
@@ -31,11 +31,11 @@ public class AppIdentityDbContextSeed
 
         string adminUserName = "admin@microsoft.com";
         var adminUser = new ApplicationUser { UserName = adminUserName, Email = adminUserName };
-        await userManager.CreateAsync(adminUser, AuthorizationConstants.DEFAULT_PASSWORD);
+        await userManager.CreateAsync(adminUser, AuthorizationConstants.DefaultPassword);
         adminUser = await userManager.FindByNameAsync(adminUserName);
         if (adminUser != null)
         {
-            await userManager.AddToRoleAsync(adminUser, BlazorShared.Authorization.Constants.Roles.ADMINISTRATORS);
+            await userManager.AddToRoleAsync(adminUser, BlazorShared.Authorization.Constants.Roles.Administrators);
         }
     }
 }

@@ -65,8 +65,8 @@ public class CatalogItemListPagedEndpoint
             tasks.Add(task);
         }
         await Task.WhenAll(tasks.ToList());
-        var totalKO = tasks.Count(t => t.Result.StatusCode != HttpStatusCode.OK);
+        var totalKo = tasks.Count(t => t.Result.StatusCode != HttpStatusCode.OK);
 
-        Assert.AreEqual(0, totalKO);
+        Assert.AreEqual(0, totalKo);
     }
 }

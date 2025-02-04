@@ -6,8 +6,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace PublicApiIntegrationTests
-{
+namespace PublicApiIntegrationTests;
+
     public class ApiTokenHelper
     {
         public static string GetAdminUserToken()
@@ -36,14 +36,14 @@ namespace PublicApiIntegrationTests
 
         private static string CreateToken(string userName, string[] roles)
         {
-            var claims = new List<Claim> { new Claim(ClaimTypes.Name, userName) };
+        var claims = new List<Claim> { new(ClaimTypes.Name, userName) };
 
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            var key = Encoding.ASCII.GetBytes(AuthorizationConstants.JWT_SECRET_KEY);
+        var key = Encoding.ASCII.GetBytes(AuthorizationConstants.JwtSecretKey);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims.ToArray()),
@@ -55,4 +55,3 @@ namespace PublicApiIntegrationTests
             return tokenHandler.WriteToken(token);
         }
     }
-}

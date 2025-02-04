@@ -7,7 +7,7 @@
 
 <h1>Manage Product Catalog</h1>
 
-@if (catalogItems == null)
+@if (_catalogItems == null)
 {
     <Spinner></Spinner>
 }
@@ -34,7 +34,7 @@ else
             </tr>
         </thead>
         <tbody class="cursor-pointer">
-            @foreach (var item in catalogItems)
+            @foreach (var item in _catalogItems)
             {
                 <tr @onclick="@(() => DetailsClick(item.Id))">
                     <td>
@@ -60,8 +60,8 @@ else
         </tbody>
     </table>
 
-    <Details Brands="@catalogBrands" Types="@catalogTypes" OnEditClick="EditClick" @ref="DetailsComponent"></Details>
-    <Edit Brands="@catalogBrands" Types="@catalogTypes" OnSaveClick="ReloadCatalogItems" @ref="EditComponent"></Edit>
-    <Create Brands="@catalogBrands" Types="@catalogTypes" OnSaveClick="ReloadCatalogItems" @ref="CreateComponent"></Create>
-    <Delete Brands="@catalogBrands" Types="@catalogTypes" OnSaveClick="ReloadCatalogItems" @ref="DeleteComponent"></Delete>
+    <Details Brands="@_catalogBrands" Types="@_catalogTypes" OnEditClick="EditClick" @ref="DetailsComponent"></Details>
+    <Edit Brands="@_catalogBrands" Types="@_catalogTypes" OnSaveClick="ReloadCatalogItems" @ref="EditComponent"></Edit>
+    <Create Brands="@_catalogBrands" Types="@_catalogTypes" OnSaveClick="ReloadCatalogItems" @ref="CreateComponent"></Create>
+    <Delete Brands="@_catalogBrands" Types="@_catalogTypes" OnSaveClick="ReloadCatalogItems" @ref="DeleteComponent"></Delete>
 }

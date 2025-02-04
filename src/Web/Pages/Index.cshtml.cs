@@ -13,10 +13,10 @@ public class IndexModel : PageModel
         _catalogViewModelService = catalogViewModelService;
     }
 
-    public required CatalogIndexViewModel CatalogModel { get; set; } = new CatalogIndexViewModel();
+    public required CatalogIndexViewModel CatalogModel { get; set; } = new();
 
     public async Task OnGet(CatalogIndexViewModel catalogModel, int? pageId)
     {
-        CatalogModel = await _catalogViewModelService.GetCatalogItems(pageId ?? 0, Constants.ITEMS_PER_PAGE, catalogModel.BrandFilterApplied, catalogModel.TypesFilterApplied);
+        CatalogModel = await _catalogViewModelService.GetCatalogItems(pageId ?? 0, Constants.ItemsPerPage, catalogModel.BrandFilterApplied, catalogModel.TypesFilterApplied);
     }
 }

@@ -23,11 +23,11 @@ public class IdentityTokenClaimService : ITokenClaimsService
     public async Task<string> GetTokenAsync(string userName)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(AuthorizationConstants.JWT_SECRET_KEY);
+        var key = Encoding.ASCII.GetBytes(AuthorizationConstants.JwtSecretKey);
         var user = await _userManager.FindByNameAsync(userName);
         if (user == null) throw new UserNotFoundException(userName);
         var roles = await _userManager.GetRolesAsync(user);
-        var claims = new List<Claim> { new Claim(ClaimTypes.Name, userName) };
+        var claims = new List<Claim> { new(ClaimTypes.Name, userName) };
 
         foreach (var role in roles)
         {

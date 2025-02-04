@@ -2,11 +2,11 @@
 
 public class AuthorizationConstants
 {
-    public const string AUTH_KEY = "AuthKeyOfDoomThatMustBeAMinimumNumberOfBytes";
+    public const string AuthKey = "AuthKeyOfDoomThatMustBeAMinimumNumberOfBytes";
 
     // TODO: Don't use this in production
-    public const string DEFAULT_PASSWORD = "Pass@word1";
+    public const string DefaultPassword = "Pass@word1";
 
     // TODO: Change this to an environment variable
-    public const string JWT_SECRET_KEY = "SecretKeyOfDoomThatMustBeAMinimumNumberOfBytes";
+    public const string JwtSecretKey = "SecretKeyOfDoomThatMustBeAMinimumNumberOfBytes";
 }

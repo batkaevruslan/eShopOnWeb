@@ -13,7 +13,7 @@ public class RoleGetByIdEndpoint (RoleManager<IdentityRole> roleManager) : Endpo
     public override void Configure()
     {
         Get("api/roles/{roleId}");
-        Roles(BlazorShared.Authorization.Constants.Roles.ADMINISTRATORS);
+        Roles(BlazorShared.Authorization.Constants.Roles.Administrators);
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Description(d =>
             d.Produces<DeleteRoleResponse>()

@@ -36,12 +36,12 @@ builder.Services.AddMemoryCache();
 
 builder.Services.AddJwtAuthentication();
 
-const string CORS_POLICY = "CorsPolicy";
+const string corsPolicy = "CorsPolicy";
 
-var configSection = builder.Configuration.GetRequiredSection(BaseUrlConfiguration.CONFIG_NAME);
+var configSection = builder.Configuration.GetRequiredSection(BaseUrlConfiguration.ConfigName);
 builder.Services.Configure<BaseUrlConfiguration>(configSection);
 var baseUrlConfig = configSection.Get<BaseUrlConfiguration>();
-builder.Services.AddCorsPolicy(CORS_POLICY, baseUrlConfig!);
+builder.Services.AddCorsPolicy(corsPolicy, baseUrlConfig!);
 
 builder.Services.AddControllers();
 
@@ -67,7 +67,7 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
-app.UseCors(CORS_POLICY);
+app.UseCors(corsPolicy);
 
 app.UseAuthorization();
 

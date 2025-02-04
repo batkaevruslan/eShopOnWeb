@@ -16,7 +16,7 @@ public class DeleteRoleEndpoint(RoleManager<IdentityRole> roleManager, UserManag
     public override void Configure()
     {
         Delete("api/roles/{roleId}");
-        Roles(BlazorShared.Authorization.Constants.Roles.ADMINISTRATORS);
+        Roles(BlazorShared.Authorization.Constants.Roles.Administrators);
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Description(d =>
             d.Produces<DeleteRoleResponse>()

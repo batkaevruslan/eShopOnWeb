@@ -8,7 +8,7 @@ public class Buyer : BaseEntity, IAggregateRoot
 {
     public string IdentityGuid { get; private set; }
 
-    private List<PaymentMethod> _paymentMethods = new List<PaymentMethod>();
+    private List<PaymentMethod> _paymentMethods = new();
 
     public IEnumerable<PaymentMethod> PaymentMethods => _paymentMethods.AsReadOnly();
 

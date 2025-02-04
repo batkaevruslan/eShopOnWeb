@@ -14,7 +14,7 @@ public class GetByIdWithItemsAsync
 {
     private readonly CatalogContext _catalogContext;
     private readonly EfRepository<Order> _orderRepository;
-    private OrderBuilder OrderBuilder { get; } = new OrderBuilder();
+    private OrderBuilder OrderBuilder { get; } = new();
 
     public GetByIdWithItemsAsync()
     {

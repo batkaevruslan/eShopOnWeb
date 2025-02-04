@@ -2,5 +2,5 @@
 
 public class CreateCatalogItemResponse
 {
-    public CatalogItem CatalogItem { get; set; } = new CatalogItem();
+    public CatalogItem CatalogItem { get; set; } = new();
 }

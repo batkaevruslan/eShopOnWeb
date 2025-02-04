@@ -50,7 +50,7 @@ public class CreateRoleEndpointTest
     {
         var request = new CreateRoleRequest()
         {
-            Name = Constants.Roles.ADMINISTRATORS
+            Name = Constants.Roles.Administrators
         };
         var jsonContent = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
         var adminToken = ApiTokenHelper.GetAdminUserToken();

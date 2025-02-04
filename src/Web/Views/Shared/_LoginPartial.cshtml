@@ -8,7 +8,7 @@
                     <img class="esh-identity-image" src="~/images/arrow-down.png">
                 </section>
                 <section class="esh-identity-drop">
-                    @if (User.IsInRole(BlazorShared.Authorization.Constants.Roles.ADMINISTRATORS) 
+                    @if (User.IsInRole(BlazorShared.Authorization.Constants.Roles.Administrators) 
                         || User.IsInRole(BlazorShared.Authorization.Constants.Roles.PRODUCT_MANAGERS))
                     {
                         <a class="esh-identity-item"

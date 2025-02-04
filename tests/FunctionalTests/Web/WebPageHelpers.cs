@@ -4,7 +4,7 @@ namespace Microsoft.eShopWeb.FunctionalTests.Web;
 
 public static class WebPageHelpers
 {
-    public static string TokenTag = "__RequestVerificationToken";
+    public static string _tokenTag = "__RequestVerificationToken";
 
     public static string GetRequestVerificationToken(string input)
     {

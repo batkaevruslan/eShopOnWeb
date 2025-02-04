@@ -337,7 +337,7 @@ public class ManageController : Controller
         var model = new TwoFactorAuthenticationViewModel
         {
             HasAuthenticator = await _userManager.GetAuthenticatorKeyAsync(user) != null,
-            Is2faEnabled = user.TwoFactorEnabled,
+            Is2FaEnabled = user.TwoFactorEnabled,
             RecoveryCodesLeft = await _userManager.CountRecoveryCodesAsync(user),
         };
 
@@ -345,7 +345,7 @@ public class ManageController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Disable2faWarning()
+    public async Task<IActionResult> Disable2FaWarning()
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -358,12 +358,12 @@ public class ManageController : Controller
             throw new ApplicationException($"Unexpected error occured disabling 2FA for user with ID '{user.Id}'.");
         }
 
-        return View(nameof(Disable2fa));
+        return View(nameof(Disable2Fa));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Disable2fa()
+    public async Task<IActionResult> Disable2Fa()
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -371,8 +371,8 @@ public class ManageController : Controller
             throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
         }
 
-        var disable2faResult = await _userManager.SetTwoFactorEnabledAsync(user, false);
-        if (!disable2faResult.Succeeded)
+        var disable2FaResult = await _userManager.SetTwoFactorEnabledAsync(user, false);
+        if (!disable2FaResult.Succeeded)
         {
             throw new ApplicationException($"Unexpected error occured disabling 2FA for user with ID '{user.Id}'.");
         }
@@ -429,10 +429,10 @@ public class ManageController : Controller
         // Strip spaces and hypens
         string verificationCode = model.Code?.Replace(" ", string.Empty).Replace("-", string.Empty) ?? "";
 
-        var is2faTokenValid = await _userManager.VerifyTwoFactorTokenAsync(
+        var is2FaTokenValid = await _userManager.VerifyTwoFactorTokenAsync(
             user, _userManager.Options.Tokens.AuthenticatorTokenProvider, verificationCode);
 
-        if (!is2faTokenValid)
+        if (!is2FaTokenValid)
         {
             ModelState.AddModelError("Code", "Verification code is invalid.");
             await LoadSharedKeyAndQrCodeUriAsync(user, model);

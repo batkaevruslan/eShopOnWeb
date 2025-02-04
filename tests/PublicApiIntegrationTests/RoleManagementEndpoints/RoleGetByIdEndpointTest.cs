@@ -25,7 +25,7 @@ public class RoleGetByIdEndpointTest
         var model = stringResponse.FromJson<RoleListResponse>();
         Assert.IsNotNull(model);
         Assert.IsNotNull(model.Roles);
-        var adminRole = model.Roles.FirstOrDefault(x => x.Name == Constants.Roles.ADMINISTRATORS);
+        var adminRole = model.Roles.FirstOrDefault(x => x.Name == Constants.Roles.Administrators);
         Assert.IsNotNull(adminRole);
 
         var response = await client.GetAsync($"api/roles/{adminRole.Id}");
@@ -35,7 +35,7 @@ public class RoleGetByIdEndpointTest
         var adminModel = adminStringResponse.FromJson<GetByIdRoleResponse>();
         Assert.IsNotNull(adminModel);
         Assert.IsNotNull(adminModel.Role);
-        Assert.AreEqual(Constants.Roles.ADMINISTRATORS, adminModel.Role.Name);
+        Assert.AreEqual(Constants.Roles.Administrators, adminModel.Role.Name);
     }
 
     [TestMethod]

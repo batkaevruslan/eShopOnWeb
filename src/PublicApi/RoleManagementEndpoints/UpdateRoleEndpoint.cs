@@ -13,7 +13,7 @@ public class UpdateRoleEndpoint(RoleManager<IdentityRole> roleManager) : Endpoin
     public override void Configure()
     {
         Put("api/roles");
-        Roles(BlazorShared.Authorization.Constants.Roles.ADMINISTRATORS);
+        Roles(BlazorShared.Authorization.Constants.Roles.Administrators);
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Description(d =>
             d.Produces<UpdateRoleResponse>()
