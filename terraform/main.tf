@@ -29,6 +29,58 @@ resource "azurerm_service_plan" "cloudXPlanMainRegion" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.main_location
   sku_name            = var.app_service_plan_sku
+
+}
+
+resource "azurerm_monitor_autoscale_setting" "cloudXPlanMainRegionAutoscaling" {
+  name                = "cloudXPlanMainRegionAutoscalingSetting"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  target_resource_id  = azurerm_service_plan.cloudXPlanMainRegion.id
+  profile {
+    name = "default"
+    capacity {
+      default = 1
+      minimum = 1
+      maximum = 2
+    }
+    rule {
+      metric_trigger {
+        metric_name        = "CpuPercentage"
+        metric_resource_id = azurerm_service_plan.cloudXPlanMainRegion.id
+        time_grain         = "PT1M"
+        statistic          = "Average"
+        time_window        = "PT5M"
+        time_aggregation   = "Average"
+        operator           = "GreaterThan"
+        threshold          = 30
+      }
+      scale_action {
+        direction = "Increase"
+        type      = "ChangeCount"
+        value     = "1"
+        cooldown  = "PT1M"
+      }
+    }
+    rule {
+      metric_trigger {
+        metric_name        = "CpuPercentage"
+        metric_resource_id = azurerm_service_plan.cloudXPlanMainRegion.id
+        time_grain         = "PT1M"
+        statistic          = "Average"
+        time_window        = "PT5M"
+        time_aggregation   = "Average"
+        operator           = "LessThan"
+        threshold          = 5
+      }
+      scale_action {
+        direction = "Decrease"
+        type      = "ChangeCount"
+        value     = "1"
+        cooldown  = "PT5M"
+      }
+    }
+  }
 }
 
 resource "azurerm_windows_web_app" "publicApi" {
@@ -119,11 +171,11 @@ resource "azurerm_windows_web_app_slot" "eShopWeb2StagingSlot" {
 resource "azurerm_traffic_manager_profile" "eShopWebTrafficManager" {
   name                   = "eShopWebTrafficManager"
   resource_group_name    = azurerm_resource_group.rg.name
-  traffic_routing_method = "Performance"  
+  traffic_routing_method = "Performance"
 
   dns_config {
     relative_name = "eShopWebTrafficManager"
-    ttl           = 100    
+    ttl           = 100
   }
 
   monitor_config {
