@@ -3,7 +3,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.17.0"
+      version = "~> 4.18.0"
     }
   }
 }
@@ -105,6 +105,10 @@ resource "azurerm_windows_web_app" "publicApi" {
       ]
     }
   }
+
+  app_settings = {
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.cloudXApplicationInsights.connection_string
+  }
 }
 
 resource "azurerm_windows_web_app" "eShopWeb1" {
@@ -200,4 +204,11 @@ resource "azurerm_traffic_manager_azure_endpoint" "eShopWeb2TrafficManagerEndpoi
   profile_id         = azurerm_traffic_manager_profile.eShopWebTrafficManager.id
   weight             = 50
   target_resource_id = azurerm_windows_web_app.eShopWeb2.id
+}
+
+resource "azurerm_application_insights" "cloudXApplicationInsights" {
+  name = "CloudXApplicationInsights"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = var.main_location
+  application_type = "web"  
 }

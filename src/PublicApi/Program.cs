@@ -1,4 +1,5 @@
-﻿using BlazorShared;
+﻿using Azure.Monitor.OpenTelemetry.AspNetCore;
+using BlazorShared;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Microsoft.AspNetCore.Builder;
@@ -42,6 +43,8 @@ var configSection = builder.Configuration.GetRequiredSection(BaseUrlConfiguratio
 builder.Services.Configure<BaseUrlConfiguration>(configSection);
 var baseUrlConfig = configSection.Get<BaseUrlConfiguration>();
 builder.Services.AddCorsPolicy(corsPolicy, baseUrlConfig!);
+
+builder.Services.AddOpenTelemetry().UseAzureMonitor();
 
 builder.Services.AddControllers();
 
