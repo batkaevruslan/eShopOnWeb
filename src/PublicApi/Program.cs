@@ -1,4 +1,5 @@
-﻿using Azure.Monitor.OpenTelemetry.AspNetCore;
+﻿using System;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using BlazorShared;
 using FastEndpoints;
 using FastEndpoints.Swagger;
@@ -60,6 +61,12 @@ await app.SeedDatabaseAsync();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+}
+
+if (builder.Configuration.GetValue<bool>("FailOnStartup"))
+{
+    // you'll find it following https://learn.microsoft.com/en-us/aspnet/core/test/troubleshoot-azure-iis?view=aspnetcore-9.0#application-event-log-azure-app-service
+    throw new Exception("Cannot move further");
 }
 
 app.UseMiddleware<ExceptionMiddleware>();
