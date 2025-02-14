@@ -1,5 +1,6 @@
 ﻿using BlazorShared;
 using FastEndpoints;
+using FastEndpoints.Swagger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.eShopWeb.Infrastructure;
@@ -17,7 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add service defaults & Aspire components.
 builder.AddAspireServiceDefaults();
 
-builder.Services.AddFastEndpoints();
+builder.Services.AddFastEndpoints()
+    .SwaggerDocument();
 
 // Use to force loading of appsettings.json of test project
 builder.Configuration.AddConfigurationFile("appsettings.test.json");
@@ -46,8 +48,6 @@ builder.Services.AddControllers();
 // TODO: Consider removing AutoMapper dependency (FastEndpoints already has its own Mapper support)
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
-builder.Services.AddSwagger();
-
 var app = builder.Build();
 
 app.Logger.LogInformation("PublicApi App created...");
@@ -69,17 +69,8 @@ app.UseCors(corsPolicy);
 
 app.UseAuthorization();
 
-// Enable middleware to serve generated Swagger as a JSON endpoint.
-app.UseSwagger();
-
-// Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
-// specifying the Swagger JSON endpoint.
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-});
-
-app.UseFastEndpoints();
+app.UseFastEndpoints()
+    .UseSwaggerGen();
 
 app.Logger.LogInformation("LAUNCHING PublicApi");
 app.Run();
