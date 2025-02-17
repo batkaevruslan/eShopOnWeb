@@ -10,7 +10,7 @@ variable "second_location" {
 
 variable "app_service_plan_sku" {
   type        = string
-  default     = "P0v3" #https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans#should-i-put-an-app-in-a-new-plan-or-an-existing-plan
+  default     = "S1" #"P0v3" #https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans#should-i-put-an-app-in-a-new-plan-or-an-existing-plan
   description = "The SKU of the App Service Plan."
 }
 

@@ -1,0 +1,33 @@
+POST http://localhost:7005/api/ReserveItemFunction
+Content-Type: application/json
+
+{
+    "Items": [
+        {
+            "Id":1,
+            "Quantity":2
+        },
+        {
+            "Id":2,
+            "Quantity":3
+        }
+    ]
+}
+
+###
+POST https://orderitemsreserverfunctionapp.azurewebsites.net/api/ReserveItemFunction
+Content-Type: application/json
+x-functions-key: TODO
+
+{
+    "Items": [
+        {
+            "Id":1,
+            "Quantity":2
+        },
+        {
+            "Id":2,
+            "Quantity":3
+        }
+    ]
+}
