@@ -149,6 +149,7 @@ resource "azurerm_windows_web_app" "eShopWeb1" {
 
   app_settings = {
     OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
     ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
@@ -183,6 +184,7 @@ resource "azurerm_windows_web_app" "eShopWeb2" {
 
   app_settings = {
     OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
     ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
@@ -200,6 +202,7 @@ resource "azurerm_windows_web_app_slot" "eShopWeb2StagingSlot" {
 
   app_settings = {
     OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
     ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
@@ -321,4 +324,84 @@ resource "azurerm_cosmosdb_account" "cosmosDbAccount" {
     max_interval_in_seconds = 300
     max_staleness_prefix    = 100000
   }
+
+  geo_location {
+    location          = var.main_location
+    failover_priority = 0
+  }
+}
+
+resource "azurerm_cosmosdb_sql_database" "DeliveryDb" {
+  name                = "DeliveryDb"
+  resource_group_name = azurerm_resource_group.rg.name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+}
+
+resource "azurerm_cosmosdb_sql_container" "DeliveryDbOrdersContainer" {
+  name                = "Orders"
+  resource_group_name = azurerm_cosmosdb_account.cosmosDbAccount.resource_group_name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+  database_name       = azurerm_cosmosdb_sql_database.DeliveryDb.name
+  partition_key_paths = ["/shippingAddress/country"]
+}
+
+resource "azurerm_cosmosdb_sql_role_definition" "cosmosdb_readwrite_role" {
+  name                = "CosmosDBReadWriteRole"
+  resource_group_name = azurerm_resource_group.rg.name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+  type                = "CustomRole"
+  assignable_scopes   = [azurerm_cosmosdb_account.cosmosDbAccount.id]
+  permissions {
+    data_actions = [
+      "Microsoft.DocumentDB/databaseAccounts/readMetadata",
+      "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/items/*",
+      "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/*"
+    ]
+  }
+}
+
+resource "azurerm_cosmosdb_sql_role_assignment" "CosmosDBReadWriteRoleToMyUserAssignment" {
+  resource_group_name = azurerm_resource_group.rg.name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+  role_definition_id  = azurerm_cosmosdb_sql_role_definition.cosmosdb_readwrite_role.id
+  principal_id        = data.azuread_user.ruslanBatkaevUser.object_id
+  scope               = azurerm_cosmosdb_account.cosmosDbAccount.id
+}
+
+resource "azurerm_windows_function_app" "DeliveryOrderProcessorFunctionApp" {
+  name                       = "deliveryOrderProcessorFunctionApp"
+  resource_group_name        = azurerm_resource_group.rg.name
+  location                   = var.main_location
+  service_plan_id            = azurerm_service_plan.cloudXPlanMainRegion.id
+  storage_account_access_key = azurerm_storage_account.cloudXStorageAccount.primary_access_key
+  storage_account_name       = azurerm_storage_account.cloudXStorageAccount.name
+
+  site_config {
+    #use_32_bit_worker = false
+    always_on = true
+    application_stack {
+      dotnet_version              = var.app_service_dotnet_framework_version
+      use_dotnet_isolated_runtime = true
+    }
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  app_settings = {
+    CosmosDbAccountEndpoint                = azurerm_cosmosdb_account.cosmosDbAccount.endpoint
+    WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED = 1
+    WEBSITE_RUN_FROM_PACKAGE               = 1
+    FUNCTIONS_WORKER_RUNTIME               = "dotnet-isolated"
+    APPLICATIONINSIGHTS_CONNECTION_STRING  = azurerm_application_insights.cloudXApplicationInsights.connection_string
+  }
+}
+
+resource "azurerm_cosmosdb_sql_role_assignment" "CosmosDBReadWriteRoleToDeliveryOrderProcessorFunctionApp" {
+  resource_group_name = azurerm_resource_group.rg.name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+  role_definition_id  = azurerm_cosmosdb_sql_role_definition.cosmosdb_readwrite_role.id
+  principal_id        = azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.identity[0].principal_id
+  scope               = azurerm_cosmosdb_account.cosmosDbAccount.id
 }

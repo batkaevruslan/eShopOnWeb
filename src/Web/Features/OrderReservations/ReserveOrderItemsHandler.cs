@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using MediatR;
+using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 
 namespace Microsoft.eShopWeb.Web.Features.OrderReservations;
 
@@ -24,7 +25,8 @@ public class ReserveOrderItemsHandler: IRequestHandler<ReserveOrderItems>
             {
                 Quantity = item.Units,
                 Id = item.Id
-            }).ToArray()
+            }).ToArray(),
+            ShippingAddress = request.Order.ShipToAddress
         };
         StringContent content = ToJson(orderReservation);
         await _httpClient.PostAsync(_orderItemReserverUri, content, cancellationToken);
@@ -43,5 +45,6 @@ public class ReserveOrderItemsHandler: IRequestHandler<ReserveOrderItems>
             public int Quantity { get; init; }
         }
         public required Item[] Items { get; init; }
+        public required Address ShippingAddress { get; init; }
     }
 }
