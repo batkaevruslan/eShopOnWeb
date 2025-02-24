@@ -16,7 +16,7 @@ resource "azurerm_mssql_server" "cloudXServer" {
   resource_group_name = var.resourceGroup
   location            = var.location
   version             = "12.0"
-  
+
   azuread_administrator {
     login_username              = var.adminUser.user_principal_name
     object_id                   = var.adminUser.object_id
@@ -30,6 +30,7 @@ resource "azurerm_mssql_firewall_rule" "cloudx-sqlserver_public_ip_exclusion1" {
   start_ip_address = var.my_public_ip_with_vpn
   end_ip_address   = var.my_public_ip_with_vpn
 }
+
 
 resource "azurerm_mssql_firewall_rule" "cloudxSqlServerAllowAzureServices" {
   name             = "cloudxSqlServerAllowAzureServices"
