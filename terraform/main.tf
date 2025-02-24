@@ -113,9 +113,9 @@ resource "azurerm_windows_web_app" "publicApi" {
       physical_path = "site\\wwwroot"
       preload       = false
       virtual_path  = "/"
-    }
   }
-  
+  }
+
   identity {
     type = "SystemAssigned"
   }
@@ -142,7 +142,7 @@ resource "azurerm_windows_web_app" "eShopWeb1" {
 
     #use_32_bit_worker = false
   }
-  
+
   identity {
     type = "SystemAssigned"
   }
@@ -195,7 +195,7 @@ resource "azurerm_windows_web_app_slot" "eShopWeb2StagingSlot" {
   app_service_id = azurerm_windows_web_app.eShopWeb2.id
 
   site_config {}
-  
+
   identity {
     type = "SystemAssigned"
   }

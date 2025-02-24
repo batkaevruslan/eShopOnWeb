@@ -16,7 +16,11 @@ resource "azurerm_mssql_server" "cloudXServer" {
   resource_group_name = var.resourceGroup
   location            = var.location
   version             = "12.0"
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> 1993449 (Configure Azure to work with Databases)
   azuread_administrator {
     login_username              = var.adminUser.user_principal_name
     object_id                   = var.adminUser.object_id
@@ -31,6 +35,7 @@ resource "azurerm_mssql_firewall_rule" "cloudx-sqlserver_public_ip_exclusion1" {
   end_ip_address   = var.my_public_ip_with_vpn
 }
 
+<<<<<<< HEAD
 resource "azurerm_mssql_firewall_rule" "cloudxSqlServerAllowAzureServices" {
   name             = "cloudxSqlServerAllowAzureServices"
   server_id        = azurerm_mssql_server.cloudXServer.id
@@ -38,6 +43,8 @@ resource "azurerm_mssql_firewall_rule" "cloudxSqlServerAllowAzureServices" {
   end_ip_address   = "0.0.0.0"
 }
 
+=======
+>>>>>>> 1993449 (Configure Azure to work with Databases)
 #will work only when run with turned off VPN
 data "http" "public_ip" {
   url = "https://ifconfig.me/ip"
