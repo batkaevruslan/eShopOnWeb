@@ -3,6 +3,7 @@ terraform init
 terraform plan
 terraform apply -auto-approve
 terraform destroy
+terraform apply -target module.databases
 #>
 
 Connect-AzAccount -Subscription "Visual Studio Professional Subscription"

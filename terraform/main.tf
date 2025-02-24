@@ -3,7 +3,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.18.0"
+      version = "4.20.0"
     }
   }
 }
@@ -11,11 +11,15 @@ terraform {
 provider "azurerm" {
   features {}
 }
-
 resource "random_id" "rng" {
   keepers = {
   }
   byte_length = 8
+}
+
+locals {
+  CatalogDbConnectionString  = "Data Source=${module.databases.cloudXSqlServer.fully_qualified_domain_name},1433;Initial Catalog=${module.databases.eShopOnWebCatalogDb.name};Authentication=ActiveDirectoryManagedIdentity"
+  IdentityDbConnectionString = "Data Source=${module.databases.cloudXSqlServer.fully_qualified_domain_name},1433;Initial Catalog=${module.databases.eShopOnWebIdentityDb.name};Authentication=ActiveDirectoryManagedIdentity"
 }
 
 resource "azurerm_resource_group" "rg" {
@@ -104,10 +108,22 @@ resource "azurerm_windows_web_app" "publicApi" {
         "https://${azurerm_traffic_manager_profile.eShopWebTrafficManager.fqdn}"
       ]
     }
+    
+    virtual_application {
+      physical_path = "site\\wwwroot"
+      preload       = false
+      virtual_path  = "/"
+    }
+  }
+  
+  identity {
+    type = "SystemAssigned"
   }
 
   app_settings = {
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.cloudXApplicationInsights.connection_string
+    ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
+    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
 }
 
@@ -126,10 +142,15 @@ resource "azurerm_windows_web_app" "eShopWeb1" {
 
     #use_32_bit_worker = false
   }
+  
+  identity {
+    type = "SystemAssigned"
+  }
 
   app_settings = {
-    ASPNETCORE_ENVIRONMENT = "Development"
     OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
+    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
 }
 
@@ -155,10 +176,15 @@ resource "azurerm_windows_web_app" "eShopWeb2" {
     always_on = false
     #use_32_bit_worker = false
   }
+  
+  identity {
+    type = "SystemAssigned"
+  }
+
   app_settings = {
-    #temp environment untill real SQL server is used. I need "Development" just to use in-memory DB now
-    ASPNETCORE_ENVIRONMENT = "Development"
     OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
+    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
 }
 
@@ -167,11 +193,15 @@ resource "azurerm_windows_web_app_slot" "eShopWeb2StagingSlot" {
   app_service_id = azurerm_windows_web_app.eShopWeb2.id
 
   site_config {}
+  
+  identity {
+    type = "SystemAssigned"
+  }
 
   app_settings = {
-    #temp environment untill real SQL server is used. I need "Development" just to use in-memory DB now
-    ASPNETCORE_ENVIRONMENT = "Development"
     OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
+    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
 }
 
@@ -268,5 +298,27 @@ resource "azurerm_windows_function_app" "orderItemsReserverFunctionApp" {
     WEBSITE_RUN_FROM_PACKAGE               = 1
     FUNCTIONS_WORKER_RUNTIME               = "dotnet-isolated"
     APPLICATIONINSIGHTS_CONNECTION_STRING  = azurerm_application_insights.cloudXApplicationInsights.connection_string
+  }
+}
+
+module "databases" {
+  source        = "./sql_databases"
+  location      = var.main_location
+  resourceGroup = azurerm_resource_group.rg.name
+  adminUser     = data.azuread_user.ruslanBatkaevUser
+}
+
+resource "azurerm_cosmosdb_account" "cosmosDbAccount" {
+  name                = "cloudx-cosmos-db-d13jf"
+  location            = var.main_location
+  resource_group_name = azurerm_resource_group.rg.name
+  offer_type          = "Standard"
+  kind                = "GlobalDocumentDB"
+  free_tier_enabled   = true
+
+  consistency_policy {
+    consistency_level       = "BoundedStaleness"
+    max_interval_in_seconds = 300
+    max_staleness_prefix    = 100000
   }
 }
