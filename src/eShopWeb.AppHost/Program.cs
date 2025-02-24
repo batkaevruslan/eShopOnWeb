@@ -11,4 +11,10 @@ builder
 
 builder.AddAzureFunctionsProject<Projects.eShopWeb_OrderItemsReserver>("eShopWeb-OrderItemsReserver".ToLower());
 
+builder.AddAzureFunctionsProject<Projects.eShopWeb_DeliveryOrderProcessor>(
+    nameof(Projects.eShopWeb_DeliveryOrderProcessor)
+        .Replace('_', '-')
+        .ToLower()
+);
+
 builder.Build().Run();
