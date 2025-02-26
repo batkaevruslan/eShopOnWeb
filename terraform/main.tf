@@ -9,8 +9,17 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy    = true
+      recover_soft_deleted_key_vaults = false
+    }
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
+
 resource "random_id" "rng" {
   keepers = {
   }
@@ -122,8 +131,7 @@ resource "azurerm_windows_web_app" "publicApi" {
 
   app_settings = {
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.cloudXApplicationInsights.connection_string
-    ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
-    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
+    VaultUri                              = module.CloudXKeyVault.data.vault_uri
   }
 }
 
@@ -139,8 +147,12 @@ resource "azurerm_windows_web_app" "eShopWeb1" {
       dotnet_version = var.app_service_dotnet_framework_version
     }
     always_on = false
-
-    #use_32_bit_worker = false
+    
+    virtual_application {
+      physical_path = "site\\wwwroot"
+      preload       = false
+      virtual_path  = "/"
+    }
   }
 
   identity {
@@ -148,10 +160,9 @@ resource "azurerm_windows_web_app" "eShopWeb1" {
   }
 
   app_settings = {
-    OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
-    ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
-    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
+    OrderItemReserverUri                  = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri             = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    VaultUri                              = module.CloudXKeyVault.data.vault_uri
   }
 }
 
@@ -175,7 +186,12 @@ resource "azurerm_windows_web_app" "eShopWeb2" {
       dotnet_version = var.app_service_dotnet_framework_version
     }
     always_on = false
-    #use_32_bit_worker = false
+
+    virtual_application {
+      physical_path = "site\\wwwroot"
+      preload       = false
+      virtual_path  = "/"
+    }
   }
   
   identity {
@@ -183,10 +199,9 @@ resource "azurerm_windows_web_app" "eShopWeb2" {
   }
 
   app_settings = {
-    OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
-    ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
-    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
+    OrderItemReserverUri                  = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri             = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    VaultUri                              = module.CloudXKeyVault.data.vault_uri
   }
 }
 
@@ -201,10 +216,9 @@ resource "azurerm_windows_web_app_slot" "eShopWeb2StagingSlot" {
   }
 
   app_settings = {
-    OrderItemReserverUri   = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
-    ConnectionStrings__CatalogConnection = local.CatalogDbConnectionString
-    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
+    OrderItemReserverUri                  = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri             = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    VaultUri                              = module.CloudXKeyVault.data.vault_uri
   }
 }
 
@@ -404,4 +418,64 @@ resource "azurerm_cosmosdb_sql_role_assignment" "CosmosDBReadWriteRoleToDelivery
   role_definition_id  = azurerm_cosmosdb_sql_role_definition.cosmosdb_readwrite_role.id
   principal_id        = azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.identity[0].principal_id
   scope               = azurerm_cosmosdb_account.cosmosDbAccount.id
+}
+
+data "azurerm_client_config" "current" {}
+
+module "CloudXKeyVault" {
+  source                     = "./key_vault"
+  resourceGroup              = azurerm_resource_group.rg.name
+  location                   = var.main_location
+  catalogDbConnectionString  = local.CatalogDbConnectionString
+  identityDbConnectionString = local.IdentityDbConnectionString
+  tenantId                   = data.azurerm_client_config.current.tenant_id
+  currentUserId              = data.azuread_user.ruslanBatkaevUser.object_id
+}
+
+resource "azurerm_role_assignment" "eShopWeb1KeyVaultReaderAccessPolicy" {
+  scope                = module.CloudXKeyVault.data.id
+  role_definition_name = "Key Vault Reader"
+  principal_id         = azurerm_windows_web_app.eShopWeb1.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "eShopWeb1KeyVaultSecretsUserAccessPolicy" {
+  scope                = module.CloudXKeyVault.data.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_windows_web_app.eShopWeb1.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "eShopWeb2KeyVaultReaderAccessPolicy" {
+  scope                = module.CloudXKeyVault.data.id
+  role_definition_name = "Key Vault Reader"
+  principal_id         = azurerm_windows_web_app.eShopWeb2.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "eShopWeb2KeyVaultSecretsUserAccessPolicy" {
+  scope                = module.CloudXKeyVault.data.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_windows_web_app.eShopWeb2.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "eShopWeb2StagingSlotKeyVaultReaderAccessPolicy" {
+  scope                = module.CloudXKeyVault.data.id
+  role_definition_name = "Key Vault Reader"
+  principal_id         = azurerm_windows_web_app_slot.eShopWeb2StagingSlot.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "eShopWeb2StagingSlotKeyVaultSecretsUserAccessPolicy" {
+  scope                = module.CloudXKeyVault.data.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_windows_web_app_slot.eShopWeb2StagingSlot.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "publicApiKeyVaultReaderAccessPolicy" {
+  scope                = module.CloudXKeyVault.data.id
+  role_definition_name = "Key Vault Reader"
+  principal_id         = azurerm_windows_web_app.publicApi.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "publicApiKeyVaultSecretsUserAccessPolicy" {
+  scope                = module.CloudXKeyVault.data.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_windows_web_app.publicApi.identity[0].principal_id
 }

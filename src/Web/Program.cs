@@ -3,18 +3,24 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
-using Microsoft.eShopWeb.Infrastructure;
 using Microsoft.eShopWeb.Infrastructure.Identity;
 using Microsoft.eShopWeb.Web;
 using Microsoft.eShopWeb.Web.Configuration;
 using Microsoft.eShopWeb.Web.Extensions;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire components.
 builder.AddAspireServiceDefaults();
 
-builder.Services.ConfigureLocalDatabaseContexts(builder.Configuration);
+var keyVaultEndpoint = builder.Configuration["VaultUri"];
+if (keyVaultEndpoint != null)
+{
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultEndpoint), new DefaultAzureCredential());
+}
+
+builder.Services.AddDatabaseContexts(builder.Environment, builder.Configuration);
 
 builder.Services.AddCookieSettings();
 builder.Services.AddCookieAuthentication();
