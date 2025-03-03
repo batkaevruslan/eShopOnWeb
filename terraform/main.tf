@@ -3,7 +3,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "4.20.0"
+      version = "4.21.1"
     }
   }
 }
@@ -27,8 +27,9 @@ resource "random_id" "rng" {
 }
 
 locals {
-  CatalogDbConnectionString  = "Data Source=${module.databases.cloudXSqlServer.fully_qualified_domain_name},1433;Initial Catalog=${module.databases.eShopOnWebCatalogDb.name};Authentication=ActiveDirectoryManagedIdentity"
-  IdentityDbConnectionString = "Data Source=${module.databases.cloudXSqlServer.fully_qualified_domain_name},1433;Initial Catalog=${module.databases.eShopOnWebIdentityDb.name};Authentication=ActiveDirectoryManagedIdentity"
+  CatalogDbConnectionString         = "Data Source=${module.databases.cloudXSqlServer.fully_qualified_domain_name},1433;Initial Catalog=${module.databases.eShopOnWebCatalogDb.name};Authentication=ActiveDirectoryManagedIdentity"
+  IdentityDbConnectionString        = "Data Source=${module.databases.cloudXSqlServer.fully_qualified_domain_name},1433;Initial Catalog=${module.databases.eShopOnWebIdentityDb.name};Authentication=ActiveDirectoryManagedIdentity"
+  ServiceBusFullyQualifiedNamespace = "${azurerm_servicebus_namespace.cloudXServiceBus.name}.servicebus.windows.net"
 }
 
 resource "azurerm_resource_group" "rg" {
@@ -160,9 +161,10 @@ resource "azurerm_windows_web_app" "eShopWeb1" {
   }
 
   app_settings = {
-    OrderItemReserverUri                  = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri             = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
-    VaultUri                              = module.CloudXKeyVault.data.vault_uri
+    OrderItemReserverUri      = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    VaultUri                  = module.CloudXKeyVault.data.vault_uri
+    ServiceBusNamespace       = local.ServiceBusFullyQualifiedNamespace
   }
 }
 
@@ -199,9 +201,10 @@ resource "azurerm_windows_web_app" "eShopWeb2" {
   }
 
   app_settings = {
-    OrderItemReserverUri                  = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri             = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
-    VaultUri                              = module.CloudXKeyVault.data.vault_uri
+    OrderItemReserverUri      = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    VaultUri                  = module.CloudXKeyVault.data.vault_uri
+    ServiceBusNamespace       = local.ServiceBusFullyQualifiedNamespace
   }
 }
 
@@ -216,9 +219,10 @@ resource "azurerm_windows_web_app_slot" "eShopWeb2StagingSlot" {
   }
 
   app_settings = {
-    OrderItemReserverUri                  = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri             = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
-    VaultUri                              = module.CloudXKeyVault.data.vault_uri
+    OrderItemReserverUri      = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    VaultUri                  = module.CloudXKeyVault.data.vault_uri
+    ServiceBusNamespace       = local.ServiceBusFullyQualifiedNamespace
   }
 }
 
@@ -309,12 +313,13 @@ resource "azurerm_windows_function_app" "orderItemsReserverFunctionApp" {
   }
 
   app_settings = {
-    AzureStorageConfig__ServiceUri         = "https://${azurerm_storage_account.cloudXStorageAccount.primary_blob_host}",
-    AzureStorageConfig__FileContainerName  = "cloud-x-azure-hosted"
-    WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED = 1
-    WEBSITE_RUN_FROM_PACKAGE               = 1
-    FUNCTIONS_WORKER_RUNTIME               = "dotnet-isolated"
-    APPLICATIONINSIGHTS_CONNECTION_STRING  = azurerm_application_insights.cloudXApplicationInsights.connection_string
+    AzureStorageConfig__ServiceUri                            = "https://${azurerm_storage_account.cloudXStorageAccount.primary_blob_host}",
+    AzureStorageConfig__FileContainerName                     = "cloud-x-azure-hosted"
+    CloudXServiceBusConnectionString__fullyQualifiedNamespace = "${azurerm_servicebus_namespace.cloudXServiceBus.name}.servicebus.windows.net"
+    WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED                    = 1
+    WEBSITE_RUN_FROM_PACKAGE                                  = 1
+    FUNCTIONS_WORKER_RUNTIME                                  = "dotnet-isolated"
+    APPLICATIONINSIGHTS_CONNECTION_STRING                     = azurerm_application_insights.cloudXApplicationInsights.connection_string
   }
 }
 
@@ -478,4 +483,47 @@ resource "azurerm_role_assignment" "publicApiKeyVaultSecretsUserAccessPolicy" {
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_windows_web_app.publicApi.identity[0].principal_id
+}
+
+### Service bus ###
+resource "azurerm_servicebus_namespace" "cloudXServiceBus" {
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.main_location
+  sku                 = "Basic"
+  name                = "cloudXServiceBus"
+}
+
+resource "azurerm_servicebus_queue" "cloudXServiceBusOrderReservationQueue" {
+  name         = "order-reservation"
+  namespace_id = azurerm_servicebus_namespace.cloudXServiceBus.id
+}
+
+resource "azurerm_role_assignment" "eShopOnWeb1ServiceBusAccessPolicy" {
+  scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
+  role_definition_name = "Azure Service Bus Data Owner"
+  principal_id         = azurerm_windows_web_app.eShopWeb1.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "eShopOnWeb2ServiceBusAccessPolicy" {
+  scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
+  role_definition_name = "Azure Service Bus Data Owner"
+  principal_id         = azurerm_windows_web_app.eShopWeb2.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "eShopOnWeb2StagingServiceBusAccessPolicy" {
+  scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
+  role_definition_name = "Azure Service Bus Data Owner"
+  principal_id         = azurerm_windows_web_app_slot.eShopWeb2StagingSlot.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "currentUserServiceBusAccessPolicy" {
+  scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
+  role_definition_name = "Azure Service Bus Data Owner"
+  principal_id         = data.azuread_user.ruslanBatkaevUser.object_id
+}
+
+resource "azurerm_role_assignment" "orderItemsReserverFunctionAppServiceBusAccessPolicy" {
+  scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
+  role_definition_name = "Azure Service Bus Data Owner"
+  principal_id         = azurerm_windows_function_app.orderItemsReserverFunctionApp.identity[0].principal_id
 }
