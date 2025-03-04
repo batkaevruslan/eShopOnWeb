@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly;
+using Polly.Retry;
 
 namespace eShopWeb.OrderItemsReserver;
 
@@ -30,13 +32,30 @@ public class ReserveItemFunction(
         _logger.LogInformation("Message Body: {body}", message.Body);
         _logger.LogInformation("Message Content-Type: {contentType}", message.ContentType);
 
-        BlobContainerClient containerClient = await GetBlobContainerClient();
+        try
+        {
+            AsyncRetryPolicy retryPolicy = Policy
+                .Handle<Exception>()
+                .WaitAndRetryAsync(
+                    retryCount: 3,
+                    _ => TimeSpan.FromSeconds(10));
 
-        BlobClient blobClient = containerClient.GetBlobClient($"{DateTime.UtcNow:yyyy-MM-dd-hh-mm-ss-fff}.json");
+            await retryPolicy.ExecuteAsync(async () =>
+            {
+                BlobContainerClient containerClient = await GetBlobContainerClient();
 
-        await blobClient.UploadAsync(message.Body);
-        // Complete the message
-        await messageActions.CompleteMessageAsync(message);
+                BlobClient blobClient =
+                    containerClient.GetBlobClient($"{DateTime.UtcNow:yyyy-MM-dd-hh-mm-ss-fff}.json");
+
+                await blobClient.UploadAsync(message.Body);
+                // Complete the message
+                await messageActions.CompleteMessageAsync(message);
+            });
+        }
+        catch
+        {
+            await messageActions.DeadLetterMessageAsync(message);
+        }
     }
 
     private async Task<BlobContainerClient> GetBlobContainerClient()

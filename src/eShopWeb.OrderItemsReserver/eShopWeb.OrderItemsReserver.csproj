@@ -18,6 +18,7 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
     <PackageReference Include="Microsoft.Extensions.Azure" />
+    <PackageReference Include="Polly" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\eShopWeb.AspireServiceDefaults\eShopWeb.AspireServiceDefaults.csproj" />
