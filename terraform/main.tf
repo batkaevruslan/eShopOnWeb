@@ -104,8 +104,11 @@ resource "azurerm_linux_web_app" "publicApi" {
   service_plan_id     = azurerm_service_plan.cloudXPlanMainRegion.id
 
   site_config {
+    container_registry_use_managed_identity = true
+
     application_stack {
-      dotnet_version = var.app_service_dotnet_framework_version
+      docker_image_name   = "eshoppublicapi:latest"
+      docker_registry_url = "https://${azurerm_container_registry.cloudXContainerRegistry.login_server}"
     }
     always_on = false
     #use_32_bit_worker = false
@@ -115,7 +118,7 @@ resource "azurerm_linux_web_app" "publicApi" {
         "https://${azurerm_linux_web_app.eShopWeb2.default_hostname}",
         "https://${azurerm_linux_web_app_slot.eShopWeb2StagingSlot[0].default_hostname}",
         "https://${azurerm_traffic_manager_profile.eShopWebTrafficManager.fqdn}"
-      ] : [
+        ] : [
         "https://${azurerm_linux_web_app.eShopWeb1.default_hostname}",
         "https://${azurerm_linux_web_app.eShopWeb2.default_hostname}",
         "https://${azurerm_traffic_manager_profile.eShopWebTrafficManager.fqdn}"
@@ -130,6 +133,8 @@ resource "azurerm_linux_web_app" "publicApi" {
   app_settings = {
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.cloudXApplicationInsights.connection_string
     VaultUri                              = module.CloudXKeyVault.data.vault_uri
+    DOCKER_ENABLE_CI                      = true
+    WEBSITES_PORT                         = "8080"
   }
 }
 
@@ -140,8 +145,10 @@ resource "azurerm_linux_web_app" "eShopWeb1" {
   service_plan_id     = azurerm_service_plan.cloudXPlanMainRegion.id
 
   site_config {
+    container_registry_use_managed_identity = true
     application_stack {
-      dotnet_version = var.app_service_dotnet_framework_version
+      docker_image_name   = "eshopwebmvc:latest"
+      docker_registry_url = "https://${azurerm_container_registry.cloudXContainerRegistry.login_server}"
     }
     always_on = false
   }
@@ -155,6 +162,8 @@ resource "azurerm_linux_web_app" "eShopWeb1" {
     DeliveryOrderProcessorUri = "https://${azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     VaultUri                  = module.CloudXKeyVault.data.vault_uri
     ServiceBusNamespace       = local.ServiceBusFullyQualifiedNamespace
+    DOCKER_ENABLE_CI          = true
+    WEBSITES_PORT             = "8080"
   }
 }
 
@@ -544,3 +553,47 @@ resource "azurerm_api_connection" "cloudXLogicAppToServiceBusConnection" {
     ignore_changes = [parameter_values]
   }
 }
+
+### Azure Container Registry ###
+resource "azurerm_container_registry" "cloudXContainerRegistry" {
+  name                = "cloudXContainerRegistry"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.main_location
+  sku                 = "Basic"
+  admin_enabled       = true
+}
+
+resource "azurerm_role_assignment" "eShopOnWeb1ContainerRegistryAccessPolicy" {
+  scope                = azurerm_container_registry.cloudXContainerRegistry.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_linux_web_app.eShopWeb1.identity[0].principal_id
+}
+
+resource "azurerm_container_registry_webhook" "eShopOnWeb1ConainerWebhook" {
+  name                = "eShopOnWeb1ConainerWebhook"
+  resource_group_name = azurerm_resource_group.rg.name
+  registry_name       = azurerm_container_registry.cloudXContainerRegistry.name
+  location            = var.main_location
+  service_uri         = "https://${azurerm_linux_web_app.eShopWeb1.site_credential[0].name}:${azurerm_linux_web_app.eShopWeb1.site_credential[0].password}@${azurerm_linux_web_app.eShopWeb1.name}.scm.azurewebsites.net/api/registry/webhook"
+  status              = "enabled"
+  actions             = ["push"]
+  scope               = "eshopwebmvc"
+}
+
+resource "azurerm_role_assignment" "publicApiContainerRegistryAccessPolicy" {
+  scope                = azurerm_container_registry.cloudXContainerRegistry.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_linux_web_app.publicApi.identity[0].principal_id
+}
+
+# we need to change SKU from "Basic" in order to not exceed webhooks quota
+# resource "azurerm_container_registry_webhook" "publicApiConainerWebhook" {
+#   name                = "publicApiConainerWebhook"
+#   resource_group_name = azurerm_resource_group.rg.name
+#   registry_name       = azurerm_container_registry.cloudXContainerRegistry.name
+#   location            = var.main_location
+#   service_uri         = "https://${azurerm_linux_web_app.publicApi.site_credential[0].name}:${azurerm_linux_web_app.publicApi.site_credential[0].password}@${azurerm_linux_web_app.publicApi.name}.scm.azurewebsites.net/api/registry/webhook"
+#   status              = "enabled"
+#   actions             = ["push"]
+#   scope               = "eshoppublicapi"
+# }
