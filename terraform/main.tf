@@ -38,11 +38,11 @@ resource "azurerm_resource_group" "rg" {
 }
 
 resource "azurerm_service_plan" "cloudXPlanMainRegion" {
-  os_type             = "Windows"
+  os_type             = "Linux"
   name                = "CloudXServicePlanMain"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.main_location
-  sku_name            = var.app_service_plan_sku
+  sku_name            = var.createDeploymentSlots ? "P0v3" : "B1"
 
 }
 
@@ -97,7 +97,7 @@ resource "azurerm_monitor_autoscale_setting" "cloudXPlanMainRegionAutoscaling" {
   }
 }
 
-resource "azurerm_windows_web_app" "publicApi" {
+resource "azurerm_linux_web_app" "publicApi" {
   name                = "eShopPublicApi-d13jf"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.main_location
@@ -105,25 +105,22 @@ resource "azurerm_windows_web_app" "publicApi" {
 
   site_config {
     application_stack {
-      current_stack  = "dotnet"
       dotnet_version = var.app_service_dotnet_framework_version
     }
     always_on = false
     #use_32_bit_worker = false
     cors {
-      allowed_origins = [
-        "https://${azurerm_windows_web_app.eShopWeb1.default_hostname}",
-        "https://${azurerm_windows_web_app.eShopWeb2.default_hostname}",
-        "https://${azurerm_windows_web_app_slot.eShopWeb2StagingSlot.default_hostname}",
+      allowed_origins = var.createDeploymentSlots ? [
+        "https://${azurerm_linux_web_app.eShopWeb1.default_hostname}",
+        "https://${azurerm_linux_web_app.eShopWeb2.default_hostname}",
+        "https://${azurerm_linux_web_app_slot.eShopWeb2StagingSlot[0].default_hostname}",
+        "https://${azurerm_traffic_manager_profile.eShopWebTrafficManager.fqdn}"
+      ] : [
+        "https://${azurerm_linux_web_app.eShopWeb1.default_hostname}",
+        "https://${azurerm_linux_web_app.eShopWeb2.default_hostname}",
         "https://${azurerm_traffic_manager_profile.eShopWebTrafficManager.fqdn}"
       ]
     }
-    
-    virtual_application {
-      physical_path = "site\\wwwroot"
-      preload       = false
-      virtual_path  = "/"
-  }
   }
 
   identity {
@@ -136,7 +133,7 @@ resource "azurerm_windows_web_app" "publicApi" {
   }
 }
 
-resource "azurerm_windows_web_app" "eShopWeb1" {
+resource "azurerm_linux_web_app" "eShopWeb1" {
   name                = "eShopWeb1"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.main_location
@@ -144,16 +141,9 @@ resource "azurerm_windows_web_app" "eShopWeb1" {
 
   site_config {
     application_stack {
-      current_stack  = "dotnet"
       dotnet_version = var.app_service_dotnet_framework_version
     }
     always_on = false
-    
-    virtual_application {
-      physical_path = "site\\wwwroot"
-      preload       = false
-      virtual_path  = "/"
-    }
   }
 
   identity {
@@ -161,22 +151,22 @@ resource "azurerm_windows_web_app" "eShopWeb1" {
   }
 
   app_settings = {
-    OrderItemReserverUri      = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    OrderItemReserverUri      = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     VaultUri                  = module.CloudXKeyVault.data.vault_uri
     ServiceBusNamespace       = local.ServiceBusFullyQualifiedNamespace
   }
 }
 
 resource "azurerm_service_plan" "cloudXPlanSecondRegion" {
-  os_type             = "Windows"
+  os_type             = "Linux"
   name                = "CloudXServicePlanSecond"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.second_location
-  sku_name            = var.app_service_plan_sku
+  sku_name            = var.createDeploymentSlots ? "P0v3" : "B1"
 }
 
-resource "azurerm_windows_web_app" "eShopWeb2" {
+resource "azurerm_linux_web_app" "eShopWeb2" {
   name                = "eShopWeb2"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.second_location
@@ -184,33 +174,27 @@ resource "azurerm_windows_web_app" "eShopWeb2" {
 
   site_config {
     application_stack {
-      current_stack  = "dotnet"
       dotnet_version = var.app_service_dotnet_framework_version
     }
     always_on = false
-
-    virtual_application {
-      physical_path = "site\\wwwroot"
-      preload       = false
-      virtual_path  = "/"
-    }
   }
-  
+
   identity {
     type = "SystemAssigned"
   }
 
   app_settings = {
-    OrderItemReserverUri      = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    OrderItemReserverUri      = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     VaultUri                  = module.CloudXKeyVault.data.vault_uri
     ServiceBusNamespace       = local.ServiceBusFullyQualifiedNamespace
   }
 }
 
-resource "azurerm_windows_web_app_slot" "eShopWeb2StagingSlot" {
+resource "azurerm_linux_web_app_slot" "eShopWeb2StagingSlot" {
+  count          = var.createDeploymentSlots ? 1 : 0
   name           = "staging"
-  app_service_id = azurerm_windows_web_app.eShopWeb2.id
+  app_service_id = azurerm_linux_web_app.eShopWeb2.id
 
   site_config {}
 
@@ -219,8 +203,8 @@ resource "azurerm_windows_web_app_slot" "eShopWeb2StagingSlot" {
   }
 
   app_settings = {
-    OrderItemReserverUri      = "https://${azurerm_windows_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
-    DeliveryOrderProcessorUri = "https://${azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
+    OrderItemReserverUri      = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri = "https://${azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     VaultUri                  = module.CloudXKeyVault.data.vault_uri
     ServiceBusNamespace       = local.ServiceBusFullyQualifiedNamespace
   }
@@ -250,14 +234,14 @@ resource "azurerm_traffic_manager_azure_endpoint" "eShopWeb1TrafficManagerEndpoi
   name               = "eShopWeb1TrafficManagerEndpoint"
   profile_id         = azurerm_traffic_manager_profile.eShopWebTrafficManager.id
   weight             = 50
-  target_resource_id = azurerm_windows_web_app.eShopWeb1.id
+  target_resource_id = azurerm_linux_web_app.eShopWeb1.id
 }
 
 resource "azurerm_traffic_manager_azure_endpoint" "eShopWeb2TrafficManagerEndpoint" {
   name               = "eShopWeb2TrafficManagerEndpoint"
   profile_id         = azurerm_traffic_manager_profile.eShopWebTrafficManager.id
   weight             = 50
-  target_resource_id = azurerm_windows_web_app.eShopWeb2.id
+  target_resource_id = azurerm_linux_web_app.eShopWeb2.id
 }
 
 resource "azurerm_application_insights" "cloudXApplicationInsights" {
@@ -288,10 +272,10 @@ resource "azurerm_role_assignment" "blobStorageContibutorToRBAssignment" {
 resource "azurerm_role_assignment" "blobStorageContibutorToOrderItemsReserverFunctionAppAssignment" {
   scope                = azurerm_storage_account.cloudXStorageAccount.id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_windows_function_app.orderItemsReserverFunctionApp.identity[0].principal_id
+  principal_id         = azurerm_linux_function_app.orderItemsReserverFunctionApp.identity[0].principal_id
 }
 
-resource "azurerm_windows_function_app" "orderItemsReserverFunctionApp" {
+resource "azurerm_linux_function_app" "orderItemsReserverFunctionApp" {
   name                       = "orderItemsReserverFunctionApp"
   resource_group_name        = azurerm_resource_group.rg.name
   location                   = var.main_location
@@ -387,7 +371,7 @@ resource "azurerm_cosmosdb_sql_role_assignment" "CosmosDBReadWriteRoleToMyUserAs
   scope               = azurerm_cosmosdb_account.cosmosDbAccount.id
 }
 
-resource "azurerm_windows_function_app" "DeliveryOrderProcessorFunctionApp" {
+resource "azurerm_linux_function_app" "DeliveryOrderProcessorFunctionApp" {
   name                       = "deliveryOrderProcessorFunctionApp"
   resource_group_name        = azurerm_resource_group.rg.name
   location                   = var.main_location
@@ -421,7 +405,7 @@ resource "azurerm_cosmosdb_sql_role_assignment" "CosmosDBReadWriteRoleToDelivery
   resource_group_name = azurerm_resource_group.rg.name
   account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
   role_definition_id  = azurerm_cosmosdb_sql_role_definition.cosmosdb_readwrite_role.id
-  principal_id        = azurerm_windows_function_app.DeliveryOrderProcessorFunctionApp.identity[0].principal_id
+  principal_id        = azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.identity[0].principal_id
   scope               = azurerm_cosmosdb_account.cosmosDbAccount.id
 }
 
@@ -440,49 +424,51 @@ module "CloudXKeyVault" {
 resource "azurerm_role_assignment" "eShopWeb1KeyVaultReaderAccessPolicy" {
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Reader"
-  principal_id         = azurerm_windows_web_app.eShopWeb1.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app.eShopWeb1.identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "eShopWeb1KeyVaultSecretsUserAccessPolicy" {
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_windows_web_app.eShopWeb1.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app.eShopWeb1.identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "eShopWeb2KeyVaultReaderAccessPolicy" {
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Reader"
-  principal_id         = azurerm_windows_web_app.eShopWeb2.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app.eShopWeb2.identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "eShopWeb2KeyVaultSecretsUserAccessPolicy" {
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_windows_web_app.eShopWeb2.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app.eShopWeb2.identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "eShopWeb2StagingSlotKeyVaultReaderAccessPolicy" {
+  count                = var.createDeploymentSlots ? 1 : 0
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Reader"
-  principal_id         = azurerm_windows_web_app_slot.eShopWeb2StagingSlot.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app_slot.eShopWeb2StagingSlot[0].identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "eShopWeb2StagingSlotKeyVaultSecretsUserAccessPolicy" {
+  count                = var.createDeploymentSlots ? 1 : 0
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_windows_web_app_slot.eShopWeb2StagingSlot.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app_slot.eShopWeb2StagingSlot[0].identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "publicApiKeyVaultReaderAccessPolicy" {
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Reader"
-  principal_id         = azurerm_windows_web_app.publicApi.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app.publicApi.identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "publicApiKeyVaultSecretsUserAccessPolicy" {
   scope                = module.CloudXKeyVault.data.id
   role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_windows_web_app.publicApi.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app.publicApi.identity[0].principal_id
 }
 
 ### Service bus ###
@@ -501,19 +487,20 @@ resource "azurerm_servicebus_queue" "cloudXServiceBusOrderReservationQueue" {
 resource "azurerm_role_assignment" "eShopOnWeb1ServiceBusAccessPolicy" {
   scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
   role_definition_name = "Azure Service Bus Data Owner"
-  principal_id         = azurerm_windows_web_app.eShopWeb1.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app.eShopWeb1.identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "eShopOnWeb2ServiceBusAccessPolicy" {
   scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
   role_definition_name = "Azure Service Bus Data Owner"
-  principal_id         = azurerm_windows_web_app.eShopWeb2.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app.eShopWeb2.identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "eShopOnWeb2StagingServiceBusAccessPolicy" {
+  count                = var.createDeploymentSlots ? 1 : 0
   scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
   role_definition_name = "Azure Service Bus Data Owner"
-  principal_id         = azurerm_windows_web_app_slot.eShopWeb2StagingSlot.identity[0].principal_id
+  principal_id         = azurerm_linux_web_app_slot.eShopWeb2StagingSlot[0].identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "currentUserServiceBusAccessPolicy" {
@@ -525,7 +512,7 @@ resource "azurerm_role_assignment" "currentUserServiceBusAccessPolicy" {
 resource "azurerm_role_assignment" "orderItemsReserverFunctionAppServiceBusAccessPolicy" {
   scope                = azurerm_servicebus_namespace.cloudXServiceBus.id
   role_definition_name = "Azure Service Bus Data Owner"
-  principal_id         = azurerm_windows_function_app.orderItemsReserverFunctionApp.identity[0].principal_id
+  principal_id         = azurerm_linux_function_app.orderItemsReserverFunctionApp.identity[0].principal_id
 }
 
 ### Logic App ###
@@ -533,9 +520,9 @@ resource "azurerm_logic_app_workflow" "cloudXLogicApp" {
   name                = "cloudXLogicApp"
   location            = var.main_location
   resource_group_name = azurerm_resource_group.rg.name
- 
+
   identity {
-    type         = "SystemAssigned"
+    type = "SystemAssigned"
   }
 }
 

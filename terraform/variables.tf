@@ -8,14 +8,14 @@ variable "second_location" {
   default = "qatarcentral"
 }
 
-variable "app_service_plan_sku" {
-  type        = string
-  default     = "S1" #"P0v3" #https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans#should-i-put-an-app-in-a-new-plan-or-an-existing-plan
-  description = "The SKU of the App Service Plan."
+variable "createDeploymentSlots" {
+  type = bool
+  default = false
+  description = "If we do not need deployment slots, we can save money on service plan"
 }
 
 variable "app_service_dotnet_framework_version" {
   type        = string
-  default     = "v9.0"
+  default     = "9.0"
   description = "The .NET Framework version for the App Service."
 }
