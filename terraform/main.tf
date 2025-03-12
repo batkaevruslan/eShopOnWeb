@@ -33,6 +33,57 @@ resource "azurerm_service_plan" "cloudXPlanMainRegion" {
   sku_name            = local.servicePlanSku
 }
 
+resource "azurerm_monitor_autoscale_setting" "cloudXPlanMainRegionAutoscaling" {
+  name                = "cloudXPlanMainRegionAutoscalingSetting"
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  location            = azurerm_resource_group.cloudXResourceGroup.location
+  target_resource_id  = azurerm_service_plan.cloudXPlanMainRegion.id
+  profile {
+    name = "default"
+    capacity {
+      default = 1
+      minimum = 1
+      maximum = 2
+    }
+    rule {
+      metric_trigger {
+        metric_name        = "CpuPercentage"
+        metric_resource_id = azurerm_service_plan.cloudXPlanMainRegion.id
+        time_grain         = "PT1M"
+        statistic          = "Average"
+        time_window        = "PT5M"
+        time_aggregation   = "Average"
+        operator           = "GreaterThan"
+        threshold          = 30
+      }
+      scale_action {
+        direction = "Increase"
+        type      = "ChangeCount"
+        value     = "1"
+        cooldown  = "PT1M"
+      }
+    }
+    rule {
+      metric_trigger {
+        metric_name        = "CpuPercentage"
+        metric_resource_id = azurerm_service_plan.cloudXPlanMainRegion.id
+        time_grain         = "PT1M"
+        statistic          = "Average"
+        time_window        = "PT5M"
+        time_aggregation   = "Average"
+        operator           = "LessThan"
+        threshold          = 5
+      }
+      scale_action {
+        direction = "Decrease"
+        type      = "ChangeCount"
+        value     = "1"
+        cooldown  = "PT5M"
+      }
+    }
+  }
+}
+
 resource "azurerm_service_plan" "cloudXPlanSecondRegion" {
   os_type             = "Linux"
   name                = "CloudXServicePlanSecond"
