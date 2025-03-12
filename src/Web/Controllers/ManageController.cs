@@ -110,7 +110,7 @@ public class ManageController : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return View(nameof(MyAccount), model);
         }
 
         var user = await _userManager.GetUserAsync(User);
