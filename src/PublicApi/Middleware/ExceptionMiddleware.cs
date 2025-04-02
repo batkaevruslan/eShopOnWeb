@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BlazorShared.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.eShopWeb.ApplicationCore.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.eShopWeb.PublicApi.Middleware;
 
@@ -16,7 +17,7 @@ public class ExceptionMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext httpContext)
+    public async Task InvokeAsync(HttpContext httpContext, ILogger<ExceptionMiddleware> logger)
     {
         try
         {
@@ -24,11 +25,12 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(httpContext, ex);        
+            await HandleExceptionAsync(httpContext, logger, ex);        
         }
     }
 
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private async Task HandleExceptionAsync(HttpContext context, ILogger<ExceptionMiddleware> logger,
+        Exception exception)
     {
         context.Response.ContentType = "application/json";
 
@@ -43,6 +45,7 @@ public class ExceptionMiddleware
         }
         else
         {
+            logger.LogError(exception, message: null);
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             await context.Response.WriteAsync(new ErrorDetails()
             {
