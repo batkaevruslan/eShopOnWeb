@@ -9,4 +9,6 @@ builder
 builder
     .AddProject<Projects.BlazorAdmin>(nameof(Projects.BlazorAdmin).ToLower());
 
+builder.AddAzureFunctionsProject<Projects.eShopWeb_OrderItemsReserver>("eShopWeb-OrderItemsReserver".ToLower());
+
 builder.Build().Run();

@@ -16,7 +16,11 @@ provider "azurerm" {
 }
 
 locals {
-  servicePlanSku = var.createDeploymentSlots ? "P0v3" : "B1"
+  servicePlanSku = var.createDeploymentSlots ? "P0v3" : "S1"
+}
+
+data "azuread_user" "ruslanBatkaevUser" {
+  user_principal_name = "ruslan_batkaev@epam.com"
 }
 
 resource "azurerm_resource_group" "cloudXResourceGroup" {
@@ -136,6 +140,7 @@ resource "azurerm_linux_web_app" "eShopWeb1" {
 
   app_settings = {
     ASPNETCORE_ENVIRONMENT = "Production"
+    OrderItemReserverUri   = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
   }
 }
 
@@ -154,6 +159,7 @@ resource "azurerm_linux_web_app" "eShopWeb2" {
   }
   app_settings = {
     ASPNETCORE_ENVIRONMENT = "Production"
+    OrderItemReserverUri   = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
   }
 }
 
@@ -171,6 +177,7 @@ resource "azurerm_linux_web_app_slot" "eShopWeb2StagingSlot" {
 
   app_settings = {
     ASPNETCORE_ENVIRONMENT = "Production"
+    OrderItemReserverUri   = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
   }
 }
 
@@ -223,4 +230,57 @@ resource "azurerm_application_insights" "cloudXApplicationInsights" {
   location            = var.main_location
   application_type    = "web"
   workspace_id        = azurerm_log_analytics_workspace.cloudXApplicationInsightsWorkspace.id
+}
+
+### Storage
+
+resource "azurerm_storage_account" "cloudXStorageAccount" {
+  name                     = "cloudxstorageaccount"
+  resource_group_name      = azurerm_resource_group.cloudXResourceGroup.name
+  location                 = var.main_location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_role_assignment" "blobStorageContibutorToRBAssignment" {
+  scope                = azurerm_storage_account.cloudXStorageAccount.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = data.azuread_user.ruslanBatkaevUser.object_id
+}
+
+### Functions
+resource "azurerm_role_assignment" "blobStorageContibutorToOrderItemsReserverFunctionAppAssignment" {
+  scope                = azurerm_storage_account.cloudXStorageAccount.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_function_app.orderItemsReserverFunctionApp.identity[0].principal_id
+}
+
+resource "azurerm_linux_function_app" "orderItemsReserverFunctionApp" {
+  name                       = "orderItemsReserverFunctionApp"
+  resource_group_name        = azurerm_resource_group.cloudXResourceGroup.name
+  location                   = var.main_location
+  service_plan_id            = azurerm_service_plan.cloudXPlanMainRegion.id
+  storage_account_access_key = azurerm_storage_account.cloudXStorageAccount.primary_access_key
+  storage_account_name       = azurerm_storage_account.cloudXStorageAccount.name
+
+  site_config {
+    always_on = true
+    application_stack {
+      dotnet_version              = var.app_service_dotnet_framework_version
+      use_dotnet_isolated_runtime = true
+    }
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  app_settings = {
+    AzureStorageConfig__ServiceUri                            = "https://${azurerm_storage_account.cloudXStorageAccount.primary_blob_host}",
+    AzureStorageConfig__FileContainerName                     = "cloud-x-azure-hosted"
+    WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED                    = 1
+    WEBSITE_RUN_FROM_PACKAGE                                  = 1
+    FUNCTIONS_WORKER_RUNTIME                                  = "dotnet-isolated"
+    APPLICATIONINSIGHTS_CONNECTION_STRING                     = azurerm_application_insights.cloudXApplicationInsights.connection_string
+  }
 }
