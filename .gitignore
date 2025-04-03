@@ -268,3 +268,7 @@ pub/
 /terraform/terraform.tfstate.backup
 
 **/profile.arm.json
+
+**/*.arm.json
+**/local.settings.json
+/**/Properties/serviceDependencies*.json

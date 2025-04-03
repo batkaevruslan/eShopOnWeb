@@ -1,4 +1,5 @@
 ﻿using Ardalis.GuardClauses;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,7 @@ using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Exceptions;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.Infrastructure.Identity;
+using Microsoft.eShopWeb.Web.Features.OrderReservations;
 using Microsoft.eShopWeb.Web.Interfaces;
 
 namespace Microsoft.eShopWeb.Web.Pages.Basket;
@@ -17,6 +19,7 @@ public class CheckoutModel : PageModel
     private readonly IBasketService _basketService;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IOrderService _orderService;
+    private readonly IMediator _mediator;
     private string? _username = null;
     private readonly IBasketViewModelService _basketViewModelService;
     private readonly IAppLogger<CheckoutModel> _logger;
@@ -25,11 +28,13 @@ public class CheckoutModel : PageModel
         IBasketViewModelService basketViewModelService,
         SignInManager<ApplicationUser> signInManager,
         IOrderService orderService,
+        IMediator mediator,
         IAppLogger<CheckoutModel> logger)
     {
         _basketService = basketService;
         _signInManager = signInManager;
         _orderService = orderService;
+        _mediator = mediator;
         _basketViewModelService = basketViewModelService;
         _logger = logger;
     }
@@ -54,8 +59,12 @@ public class CheckoutModel : PageModel
 
             var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
             await _basketService.SetQuantities(BasketModel.Id, updateModel);
-            await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
+            ApplicationCore.Entities.OrderAggregate.Order order = await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
             await _basketService.DeleteBasketAsync(BasketModel.Id);
+            await _mediator.Send(new ReserveOrderItems
+            {
+                Order = order
+            });
         }
         catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
         {
