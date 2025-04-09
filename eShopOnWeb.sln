@@ -46,6 +46,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eShopWeb.AspireServiceDefau
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eShopWeb.OrderItemsReserver", "eShopWeb.OrderItemsReserver\eShopWeb.OrderItemsReserver.csproj", "{34B4DED1-4551-DD69-86F3-5C1BE1FB4D5A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eShopWeb.DeliveryOrderProcessor", "eShopWeb.DeliveryOrderProcessor\eShopWeb.DeliveryOrderProcessor.csproj", "{F929688B-8CF3-5A81-952B-0B57D8A35434}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,6 +106,10 @@ Global
 		{34B4DED1-4551-DD69-86F3-5C1BE1FB4D5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34B4DED1-4551-DD69-86F3-5C1BE1FB4D5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34B4DED1-4551-DD69-86F3-5C1BE1FB4D5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F929688B-8CF3-5A81-952B-0B57D8A35434}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F929688B-8CF3-5A81-952B-0B57D8A35434}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F929688B-8CF3-5A81-952B-0B57D8A35434}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F929688B-8CF3-5A81-952B-0B57D8A35434}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -122,6 +128,7 @@ Global
 		{9269A0CE-2596-4215-8ACA-765724A1630C} = {419A6ACE-0419-4315-A6FB-B0E63D39432E}
 		{DC649B65-3762-44ED-9DF8-54F450CEA311} = {419A6ACE-0419-4315-A6FB-B0E63D39432E}
 		{34B4DED1-4551-DD69-86F3-5C1BE1FB4D5A} = {419A6ACE-0419-4315-A6FB-B0E63D39432E}
+		{F929688B-8CF3-5A81-952B-0B57D8A35434} = {419A6ACE-0419-4315-A6FB-B0E63D39432E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {49813262-5DA3-4D61-ABD3-493C74CE8C2B}

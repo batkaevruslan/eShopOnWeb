@@ -9,6 +9,16 @@ builder
 builder
     .AddProject<Projects.BlazorAdmin>(nameof(Projects.BlazorAdmin).ToLower());
 
-builder.AddAzureFunctionsProject<Projects.eShopWeb_OrderItemsReserver>("eShopWeb-OrderItemsReserver".ToLower());
+builder.AddAzureFunctionsProject<Projects.eShopWeb_OrderItemsReserver>(
+    nameof(Projects.eShopWeb_OrderItemsReserver)
+        .Replace('_', '-')
+        .ToLower()
+);
+
+builder.AddAzureFunctionsProject<Projects.eShopWeb_DeliveryOrderProcessor>(
+    nameof(Projects.eShopWeb_DeliveryOrderProcessor)
+        .Replace('_', '-')
+        .ToLower()
+);
 
 builder.Build().Run();

@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Text;
 using System.Text.Json;
+using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 
 namespace Microsoft.eShopWeb.Web.Features.OrderReservations;
 
