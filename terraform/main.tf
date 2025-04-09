@@ -138,7 +138,7 @@ resource "azurerm_linux_web_app" "eShopWeb1" {
   resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
   location            = var.main_location
   service_plan_id     = azurerm_service_plan.cloudXPlanMainRegion.id
-  
+
   identity {
     type = "SystemAssigned"
   }
@@ -152,8 +152,9 @@ resource "azurerm_linux_web_app" "eShopWeb1" {
   }
 
   app_settings = {
-    ASPNETCORE_ENVIRONMENT = "Production"
-    OrderItemReserverUri   = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ASPNETCORE_ENVIRONMENT                = "Production"
+    OrderItemReserverUri                  = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri             = "https://${azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     ConnectionStrings__CatalogConnection  = local.CatalogDbConnectionString
     ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
@@ -164,7 +165,7 @@ resource "azurerm_linux_web_app" "eShopWeb2" {
   resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
   location            = var.second_location
   service_plan_id     = azurerm_service_plan.cloudXPlanSecondRegion.id
-  
+
   identity {
     type = "SystemAssigned"
   }
@@ -179,6 +180,7 @@ resource "azurerm_linux_web_app" "eShopWeb2" {
   app_settings = {
     ASPNETCORE_ENVIRONMENT                = "Production"
     OrderItemReserverUri                  = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri             = "https://${azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     ConnectionStrings__CatalogConnection  = local.CatalogDbConnectionString
     ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
@@ -187,7 +189,7 @@ resource "azurerm_linux_web_app" "eShopWeb2" {
 resource "azurerm_linux_web_app_slot" "eShopWeb2StagingSlot" {
   name           = "staging"
   app_service_id = azurerm_linux_web_app.eShopWeb2.id
-  
+
   identity {
     type = "SystemAssigned"
   }
@@ -203,6 +205,7 @@ resource "azurerm_linux_web_app_slot" "eShopWeb2StagingSlot" {
   app_settings = {
     ASPNETCORE_ENVIRONMENT                = "Production"
     OrderItemReserverUri                  = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    DeliveryOrderProcessorUri             = "https://${azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.default_hostname}/api/PrepareOrderForDelivery"
     ConnectionStrings__CatalogConnection  = local.CatalogDbConnectionString
     ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
@@ -244,7 +247,7 @@ resource "azurerm_traffic_manager_azure_endpoint" "eShopWeb2TrafficManagerEndpoi
 
 ### Application Insights
 resource "azurerm_log_analytics_workspace" "cloudXApplicationInsightsWorkspace" {
-  name                = "example"
+  name                = "cloudXApplicationInsightsWorkspace"
   location            = var.main_location
   resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
   sku                 = "PerGB2018"
@@ -313,6 +316,36 @@ resource "azurerm_linux_function_app" "orderItemsReserverFunctionApp" {
   }
 }
 
+resource "azurerm_linux_function_app" "DeliveryOrderProcessorFunctionApp" {
+  name                       = "deliveryOrderProcessorFunctionApp"
+  resource_group_name        = azurerm_resource_group.cloudXResourceGroup.name
+  location                   = var.main_location
+  service_plan_id            = azurerm_service_plan.cloudXPlanMainRegion.id
+  storage_account_access_key = azurerm_storage_account.cloudXStorageAccount.primary_access_key
+  storage_account_name       = azurerm_storage_account.cloudXStorageAccount.name
+
+  site_config {
+    always_on = true
+    application_stack {
+      dotnet_version              = var.app_service_dotnet_framework_version
+      use_dotnet_isolated_runtime = true
+    }
+    application_insights_connection_string = azurerm_application_insights.cloudXApplicationInsights.connection_string
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  app_settings = {
+    CosmosDbAccountEndpoint                = azurerm_cosmosdb_account.cosmosDbAccount.endpoint
+    WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED = 1
+    WEBSITE_RUN_FROM_PACKAGE               = 1
+    FUNCTIONS_WORKER_RUNTIME               = "dotnet-isolated"
+    APPLICATIONINSIGHTS_CONNECTION_STRING  = azurerm_application_insights.cloudXApplicationInsights.connection_string
+  }
+}
+
 ### Databases
 module "databases" {
   source        = "./sql_databases"
@@ -346,3 +379,68 @@ module "databases" {
 #     command = "az webapp connection create sql --connection ${azurerm_app_service_connection.apiToCatalogyDbConnection.name} --source-id ${azurerm_linux_web_app.publicApi.id} --target-id ${module.databases.eShopOnWebCatalogDb.id} --client-type dotnet --system-identity --customized-keys AZURE_SQL_CONNECTIONSTRING=ConnectionStrings__CatalogConnection"
 #   }
 # }
+
+resource "azurerm_cosmosdb_account" "cosmosDbAccount" {
+  name                = "cloudx-cosmos-db-d13jf"
+  location            = var.main_location
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  offer_type          = "Standard"
+  kind                = "GlobalDocumentDB"
+  free_tier_enabled   = true
+
+  consistency_policy {
+    consistency_level       = "BoundedStaleness"
+    max_interval_in_seconds = 300
+    max_staleness_prefix    = 100000
+  }
+
+  geo_location {
+    location          = var.main_location
+    failover_priority = 0
+  }
+}
+
+resource "azurerm_cosmosdb_sql_database" "DeliveryDb" {
+  name                = "DeliveryDb"
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+}
+
+resource "azurerm_cosmosdb_sql_container" "DeliveryDbOrdersContainer" {
+  name                = "Orders"
+  resource_group_name = azurerm_cosmosdb_account.cosmosDbAccount.resource_group_name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+  database_name       = azurerm_cosmosdb_sql_database.DeliveryDb.name
+  partition_key_paths = ["/shippingAddress/country"]
+}
+
+resource "azurerm_cosmosdb_sql_role_definition" "cosmosdb_readwrite_role" {
+  name                = "CosmosDBReadWriteRole"
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+  type                = "CustomRole"
+  assignable_scopes   = [azurerm_cosmosdb_account.cosmosDbAccount.id]
+  permissions {
+    data_actions = [
+      "Microsoft.DocumentDB/databaseAccounts/readMetadata",
+      "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/items/*",
+      "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/*"
+    ]
+  }
+}
+
+resource "azurerm_cosmosdb_sql_role_assignment" "CosmosDBReadWriteRoleToMyUserAssignment" {
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+  role_definition_id  = azurerm_cosmosdb_sql_role_definition.cosmosdb_readwrite_role.id
+  principal_id        = data.azuread_user.ruslanBatkaevUser.object_id
+  scope               = azurerm_cosmosdb_account.cosmosDbAccount.id
+}
+
+resource "azurerm_cosmosdb_sql_role_assignment" "CosmosDBReadWriteRoleToDeliveryOrderProcessorFunctionApp" {
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  account_name        = azurerm_cosmosdb_account.cosmosDbAccount.name
+  role_definition_id  = azurerm_cosmosdb_sql_role_definition.cosmosdb_readwrite_role.id
+  principal_id        = azurerm_linux_function_app.DeliveryOrderProcessorFunctionApp.identity[0].principal_id
+  scope               = azurerm_cosmosdb_account.cosmosDbAccount.id
+}
