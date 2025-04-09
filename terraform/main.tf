@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "4.25.0"
+      version = "4.26.0"
     }
   }
 }
@@ -16,7 +16,10 @@ provider "azurerm" {
 }
 
 locals {
-  servicePlanSku = var.createDeploymentSlots ? "P0v3" : "S1"
+  servicePlanSku             = var.createDeploymentSlots ? "P0v3" : "S1"
+  CatalogDbConnectionString  = "Data Source=${module.databases.cloudXSqlServer.fully_qualified_domain_name},1433;Initial Catalog=${module.databases.eShopOnWebCatalogDb.name};Authentication=ActiveDirectoryManagedIdentity"
+  IdentityDbConnectionString = "Data Source=${module.databases.cloudXSqlServer.fully_qualified_domain_name},1433;Initial Catalog=${module.databases.eShopOnWebIdentityDb.name};Authentication=ActiveDirectoryManagedIdentity"
+
 }
 
 data "azuread_user" "ruslanBatkaevUser" {
@@ -103,6 +106,10 @@ resource "azurerm_linux_web_app" "publicApi" {
   location            = var.main_location
   service_plan_id     = azurerm_service_plan.cloudXPlanMainRegion.id
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   site_config {
     application_stack {
       dotnet_version = var.app_service_dotnet_framework_version
@@ -121,6 +128,8 @@ resource "azurerm_linux_web_app" "publicApi" {
 
   app_settings = {
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.cloudXApplicationInsights.connection_string
+    ConnectionStrings__CatalogConnection  = local.CatalogDbConnectionString
+    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
 }
 
@@ -129,6 +138,10 @@ resource "azurerm_linux_web_app" "eShopWeb1" {
   resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
   location            = var.main_location
   service_plan_id     = azurerm_service_plan.cloudXPlanMainRegion.id
+  
+  identity {
+    type = "SystemAssigned"
+  }
 
   site_config {
     application_stack {
@@ -141,6 +154,8 @@ resource "azurerm_linux_web_app" "eShopWeb1" {
   app_settings = {
     ASPNETCORE_ENVIRONMENT = "Production"
     OrderItemReserverUri   = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ConnectionStrings__CatalogConnection  = local.CatalogDbConnectionString
+    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
 }
 
@@ -149,6 +164,10 @@ resource "azurerm_linux_web_app" "eShopWeb2" {
   resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
   location            = var.second_location
   service_plan_id     = azurerm_service_plan.cloudXPlanSecondRegion.id
+  
+  identity {
+    type = "SystemAssigned"
+  }
 
   site_config {
     application_stack {
@@ -158,14 +177,20 @@ resource "azurerm_linux_web_app" "eShopWeb2" {
     use_32_bit_worker = true
   }
   app_settings = {
-    ASPNETCORE_ENVIRONMENT = "Production"
-    OrderItemReserverUri   = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ASPNETCORE_ENVIRONMENT                = "Production"
+    OrderItemReserverUri                  = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ConnectionStrings__CatalogConnection  = local.CatalogDbConnectionString
+    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
 }
 
 resource "azurerm_linux_web_app_slot" "eShopWeb2StagingSlot" {
   name           = "staging"
   app_service_id = azurerm_linux_web_app.eShopWeb2.id
+  
+  identity {
+    type = "SystemAssigned"
+  }
 
   site_config {
     application_stack {
@@ -176,8 +201,10 @@ resource "azurerm_linux_web_app_slot" "eShopWeb2StagingSlot" {
   }
 
   app_settings = {
-    ASPNETCORE_ENVIRONMENT = "Production"
-    OrderItemReserverUri   = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ASPNETCORE_ENVIRONMENT                = "Production"
+    OrderItemReserverUri                  = "https://${azurerm_linux_function_app.orderItemsReserverFunctionApp.default_hostname}/api/ReserveItemFunction"
+    ConnectionStrings__CatalogConnection  = local.CatalogDbConnectionString
+    ConnectionStrings__IdentityConnection = local.IdentityDbConnectionString
   }
 }
 
@@ -269,6 +296,7 @@ resource "azurerm_linux_function_app" "orderItemsReserverFunctionApp" {
       dotnet_version              = var.app_service_dotnet_framework_version
       use_dotnet_isolated_runtime = true
     }
+    application_insights_connection_string = azurerm_application_insights.cloudXApplicationInsights.connection_string
   }
 
   identity {
@@ -276,11 +304,45 @@ resource "azurerm_linux_function_app" "orderItemsReserverFunctionApp" {
   }
 
   app_settings = {
-    AzureStorageConfig__ServiceUri                            = "https://${azurerm_storage_account.cloudXStorageAccount.primary_blob_host}",
-    AzureStorageConfig__FileContainerName                     = "cloud-x-azure-hosted"
-    WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED                    = 1
-    WEBSITE_RUN_FROM_PACKAGE                                  = 1
-    FUNCTIONS_WORKER_RUNTIME                                  = "dotnet-isolated"
-    APPLICATIONINSIGHTS_CONNECTION_STRING                     = azurerm_application_insights.cloudXApplicationInsights.connection_string
+    AzureStorageConfig__ServiceUri         = "https://${azurerm_storage_account.cloudXStorageAccount.primary_blob_host}",
+    AzureStorageConfig__FileContainerName  = "cloud-x-azure-hosted"
+    WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED = 1
+    WEBSITE_RUN_FROM_PACKAGE               = 1
+    FUNCTIONS_WORKER_RUNTIME               = "dotnet-isolated"
+    APPLICATIONINSIGHTS_CONNECTION_STRING  = azurerm_application_insights.cloudXApplicationInsights.connection_string
   }
 }
+
+### Databases
+module "databases" {
+  source        = "./sql_databases"
+  location      = var.main_location
+  resourceGroup = azurerm_resource_group.cloudXResourceGroup.name
+  adminUser     = data.azuread_user.ruslanBatkaevUser
+}
+
+# resource "azurerm_app_service_connection" "apiToIdentityDbConnection" {
+#   name               = "apiToIdentityDbConnection"
+#   app_service_id     = azurerm_linux_web_app.publicApi.id
+#   target_resource_id = module.databases.eShopOnWebIdentityDb.id
+#   client_type        = "dotnet"
+#   authentication {
+#     type = "systemAssignedIdentity"
+#   }
+#   provisioner "local-exec" {
+#     command = "az webapp connection create sql --connection ${azurerm_app_service_connection.apiToIdentityDbConnection.name} --source-id ${azurerm_linux_web_app.publicApi.id} --target-id ${module.databases.eShopOnWebIdentityDb.id} --client-type dotnet --system-identity"
+#   }
+# }
+
+# resource "azurerm_app_service_connection" "apiToCatalogyDbConnection" {
+#   name               = "apiToCatalogyDbConnection"
+#   app_service_id     = azurerm_linux_web_app.publicApi.id
+#   target_resource_id = module.databases.eShopOnWebCatalogDb.id
+#   client_type        = "dotnet"
+#   authentication {
+#     type = "systemAssignedIdentity"
+#   }
+#   provisioner "local-exec" {
+#     command = "az webapp connection create sql --connection ${azurerm_app_service_connection.apiToCatalogyDbConnection.name} --source-id ${azurerm_linux_web_app.publicApi.id} --target-id ${module.databases.eShopOnWebCatalogDb.id} --client-type dotnet --system-identity --customized-keys AZURE_SQL_CONNECTIONSTRING=ConnectionStrings__CatalogConnection"
+#   }
+# }
