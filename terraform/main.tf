@@ -299,7 +299,6 @@ resource "azurerm_linux_function_app" "orderItemsReserverFunctionApp" {
       dotnet_version              = var.app_service_dotnet_framework_version
       use_dotnet_isolated_runtime = true
     }
-    application_insights_connection_string = azurerm_application_insights.cloudXApplicationInsights.connection_string
   }
 
   identity {
@@ -330,7 +329,6 @@ resource "azurerm_linux_function_app" "DeliveryOrderProcessorFunctionApp" {
       dotnet_version              = var.app_service_dotnet_framework_version
       use_dotnet_isolated_runtime = true
     }
-    application_insights_connection_string = azurerm_application_insights.cloudXApplicationInsights.connection_string
   }
 
   identity {
