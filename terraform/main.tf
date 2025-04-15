@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.22"
+      version = "4.25.0"
     }
   }
 }
@@ -114,6 +114,10 @@ resource "azurerm_linux_web_app" "publicApi" {
       ]
     }
   }
+
+  app_settings = {
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.cloudXApplicationInsights.connection_string
+  }
 }
 
 resource "azurerm_linux_web_app" "eShopWeb1" {
@@ -202,4 +206,21 @@ resource "azurerm_traffic_manager_azure_endpoint" "eShopWeb2TrafficManagerEndpoi
   profile_id         = azurerm_traffic_manager_profile.eShopWebTrafficManager.id
   weight             = 50
   target_resource_id = azurerm_linux_web_app.eShopWeb2.id
+}
+
+### Application Insights
+resource "azurerm_log_analytics_workspace" "cloudXApplicationInsightsWorkspace" {
+  name                = "example"
+  location            = var.main_location
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+resource "azurerm_application_insights" "cloudXApplicationInsights" {
+  name                = "CloudXApplicationInsights"
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  location            = var.main_location
+  application_type    = "web"
+  workspace_id        = azurerm_log_analytics_workspace.cloudXApplicationInsightsWorkspace.id
 }
