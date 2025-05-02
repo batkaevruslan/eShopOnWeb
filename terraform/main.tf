@@ -559,3 +559,34 @@ resource "azurerm_role_assignment" "orderItemsReserverFunctionAppServiceBusAcces
   role_definition_name = "Azure Service Bus Data Owner"
   principal_id         = azurerm_linux_function_app.orderItemsReserverFunctionApp.identity[0].principal_id
 }
+
+
+### Logic App ###
+resource "azurerm_logic_app_workflow" "cloudXLogicApp" {
+  name                = "cloudXLogicApp"
+  location            = var.main_location
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+ 
+  identity {
+    type         = "SystemAssigned"
+  }
+}
+
+data "azurerm_managed_api" "example" {
+  name     = "servicebus"
+  location = var.main_location
+}
+
+resource "azurerm_api_connection" "cloudXLogicAppToServiceBusConnection" {
+  name                = "logicAppToServiceBusConnection"
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  managed_api_id      = data.azurerm_managed_api.example.id
+
+  parameter_values = {
+    connectionString = azurerm_servicebus_namespace.cloudXServiceBus.default_primary_connection_string
+  }
+
+  lifecycle {
+    ignore_changes = [parameter_values]
+  }
+}
