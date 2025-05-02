@@ -1,22 +1,13 @@
 ﻿using MediatR;
-using System.Configuration;
-using System.Text;
-using System.Text.Json;
-using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
+using Azure.Messaging.ServiceBus;
 
 namespace Microsoft.eShopWeb.Web.Features.OrderReservations;
 
-public class ReserveOrderItemsHandler: IRequestHandler<ReserveOrderItems>
+public class ReserveOrderItemsHandler(ServiceBusClient serviceBusClient): IRequestHandler<ReserveOrderItems>
 {
-    private readonly string _orderItemReserverUri;
+    private const string OrderReservationQueueName = "order-reservation";
+    private readonly ServiceBusClient _serviceBusClient = serviceBusClient;
 
-    public ReserveOrderItemsHandler(IConfiguration configuration)
-    {
-        _orderItemReserverUri = configuration.GetValue<string>("OrderItemReserverUri")
-                                ?? throw new ConfigurationErrorsException("OrderItemReserverUri is not specified in configuration");
-    }
-
-    private static readonly HttpClient _httpClient = new();
     public async Task Handle(ReserveOrderItems request, CancellationToken cancellationToken)
     {
         OrderReservation orderReservation = new()
@@ -27,13 +18,10 @@ public class ReserveOrderItemsHandler: IRequestHandler<ReserveOrderItems>
                 Id = item.Id
             }).ToArray()
         };
-        StringContent content = ToJson(orderReservation);
-        await _httpClient.PostAsync(_orderItemReserverUri, content, cancellationToken);
-    }
-
-    private static StringContent ToJson(object obj)
-    {
-        return new StringContent(JsonSerializer.Serialize(obj), Encoding.UTF8, "application/json");
+        ServiceBusSender sender = _serviceBusClient.CreateSender(OrderReservationQueueName);
+        await sender.SendMessageAsync(
+            new ServiceBusMessage(BinaryData.FromObjectAsJson(orderReservation)),
+            cancellationToken);
     }
 
     public class OrderReservation
