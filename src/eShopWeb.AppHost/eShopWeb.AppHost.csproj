@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\eShopWeb.DeliveryOrderProcessor\eShopWeb.DeliveryOrderProcessor.csproj" />
     <ProjectReference Include="..\..\eShopWeb.OrderItemsReserver\eShopWeb.OrderItemsReserver.csproj" />
     <ProjectReference Include="..\BlazorAdmin\BlazorAdmin.csproj" />
     <ProjectReference Include="..\PublicApi\PublicApi.csproj" />

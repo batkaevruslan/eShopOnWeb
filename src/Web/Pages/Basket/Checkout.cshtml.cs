@@ -8,6 +8,7 @@ using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Exceptions;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.Infrastructure.Identity;
+using Microsoft.eShopWeb.Web.Features.OrderDeliveryPreparation;
 using Microsoft.eShopWeb.Web.Features.OrderReservations;
 using Microsoft.eShopWeb.Web.Interfaces;
 
@@ -59,12 +60,11 @@ public class CheckoutModel : PageModel
 
             var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
             await _basketService.SetQuantities(BasketModel.Id, updateModel);
-            ApplicationCore.Entities.OrderAggregate.Order order = await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
+            ApplicationCore.Entities.OrderAggregate.Order order = await _orderService.CreateOrderAsync(BasketModel.Id,
+                new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
             await _basketService.DeleteBasketAsync(BasketModel.Id);
-            await _mediator.Send(new ReserveOrderItems
-            {
-                Order = order
-            });
+            await _mediator.Send(new ReserveOrderItems { Order = order });
+            await _mediator.Send(new PrepareOrderForDelivery { Order = order });
         }
         catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
         {
@@ -96,6 +96,7 @@ public class CheckoutModel : PageModel
         {
             _username = Request.Cookies[Constants.BasketCookiename];
         }
+
         if (_username != null) return;
 
         _username = Guid.NewGuid().ToString();
