@@ -8,11 +8,24 @@ using Microsoft.eShopWeb.Web;
 using Microsoft.eShopWeb.Web.Areas.Identity.Helpers;
 using Microsoft.eShopWeb.Web.Configuration;
 using Microsoft.eShopWeb.Web.Extensions;
+using Azure.Identity;
+using Microsoft.Extensions.Azure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire components.
 builder.AddAspireServiceDefaults();
+
+var keyVaultEndpoint = builder.Configuration["VaultUri"];
+if (keyVaultEndpoint != null)
+{
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultEndpoint), new DefaultAzureCredential());
+}
+
+builder.Services.AddAzureClients(clientBuilder =>
+{
+    clientBuilder.AddServiceBusClientWithNamespace(builder.Configuration["ServiceBusNamespace"]);
+});
 
 builder.Services.AddDatabaseContexts(builder.Environment, builder.Configuration);
 
