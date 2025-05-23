@@ -31,6 +31,13 @@ resource "azurerm_mssql_firewall_rule" "cloudx-sqlserver_public_ip_exclusion1" {
   end_ip_address   = var.my_public_ip_with_vpn
 }
 
+resource "azurerm_mssql_firewall_rule" "cloudx-sqlserver_allow_access_to_azure_resources" {
+  name             = "allow_access_to_azure_resources"
+  server_id        = azurerm_mssql_server.cloudXServer.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
+}
+
 #will work only when run with turned off VPN
 data "http" "public_ip" {
   url = "https://ifconfig.me/ip"

@@ -157,11 +157,8 @@ resource "azurerm_linux_web_app" "eShopWeb1" {
   }
 
   site_config {
-    container_registry_use_managed_identity = true
-
     application_stack {
-      docker_image_name   = "eshopwebmvc:latest"
-      docker_registry_url = "https://${azurerm_container_registry.cloudXContainerRegistry.login_server}"
+      dotnet_version = var.app_service_dotnet_framework_version
     }
     always_on         = true
     use_32_bit_worker = true
@@ -610,23 +607,6 @@ resource "azurerm_container_registry" "cloudXContainerRegistry" {
   admin_enabled       = true
 }
 
-resource "azurerm_role_assignment" "eShopOnWeb1ContainerRegistryAccessPolicy" {
-  scope                = azurerm_container_registry.cloudXContainerRegistry.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_linux_web_app.eShopWeb1.identity[0].principal_id
-}
-
-resource "azurerm_container_registry_webhook" "eShopOnWeb1ConainerWebhook" {
-  name                = "eShopOnWeb1ConainerWebhook"
-  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
-  registry_name       = azurerm_container_registry.cloudXContainerRegistry.name
-  location            = var.main_location
-  service_uri         = "https://${azurerm_linux_web_app.eShopWeb1.site_credential[0].name}:${azurerm_linux_web_app.eShopWeb1.site_credential[0].password}@${azurerm_linux_web_app.eShopWeb1.name}.scm.azurewebsites.net/api/registry/webhook"
-  status              = "enabled"
-  actions             = ["push"]
-  scope               = "eshopwebmvc"
-}
-
 resource "azurerm_role_assignment" "publicApiContainerRegistryAccessPolicy" {
   scope                = azurerm_container_registry.cloudXContainerRegistry.id
   role_definition_name = "AcrPull"
@@ -634,13 +614,13 @@ resource "azurerm_role_assignment" "publicApiContainerRegistryAccessPolicy" {
 }
 
 # we need to change SKU from "Basic" in order to not exceed webhooks quota
-# resource "azurerm_container_registry_webhook" "publicApiConainerWebhook" {
-#   name                = "publicApiConainerWebhook"
-#   resource_group_name = azurerm_resource_group.rg.name
-#   registry_name       = azurerm_container_registry.cloudXContainerRegistry.name
-#   location            = var.main_location
-#   service_uri         = "https://${azurerm_linux_web_app.publicApi.site_credential[0].name}:${azurerm_linux_web_app.publicApi.site_credential[0].password}@${azurerm_linux_web_app.publicApi.name}.scm.azurewebsites.net/api/registry/webhook"
-#   status              = "enabled"
-#   actions             = ["push"]
-#   scope               = "eshoppublicapi"
-# }
+resource "azurerm_container_registry_webhook" "publicApiConainerWebhook" {
+  name                = "publicApiConainerWebhook"
+  resource_group_name = azurerm_resource_group.cloudXResourceGroup.name
+  registry_name       = azurerm_container_registry.cloudXContainerRegistry.name
+  location            = var.main_location
+  service_uri         = "https://${azurerm_linux_web_app.publicApi.site_credential[0].name}:${azurerm_linux_web_app.publicApi.site_credential[0].password}@${azurerm_linux_web_app.publicApi.name}.scm.azurewebsites.net/api/registry/webhook"
+  status              = "enabled"
+  actions             = ["push"]
+  scope               = "eshoppublicapi"
+}
