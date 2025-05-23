@@ -1,4 +1,5 @@
 ﻿using System;
+using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using BlazorShared;
 using FastEndpoints;
@@ -22,6 +23,11 @@ builder.AddAspireServiceDefaults();
 
 builder.Services.AddFastEndpoints();
 
+var keyVaultEndpoint = builder.Configuration["VaultUri"];
+if (keyVaultEndpoint != null)
+{
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultEndpoint), new DefaultAzureCredential());
+}
 // Use to force loading of appsettings.json of test project
 builder.Configuration.AddConfigurationFile("appsettings.test.json");
 
