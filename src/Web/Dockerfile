@@ -9,6 +9,8 @@
 #  docker run --name eshopweb --rm -it -p 5106:5106 web
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
+EXPOSE 80
+EXPOSE 443
 
 COPY *.sln .
 COPY . .
