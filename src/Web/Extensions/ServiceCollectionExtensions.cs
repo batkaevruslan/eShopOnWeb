@@ -23,18 +23,14 @@ public static class ServiceCollectionExtensions
         }
         else
         {
-            // Configure SQL Server (prod)
-            var credential = new ChainedTokenCredential(new AzureDeveloperCliCredential(), new DefaultAzureCredential());
-            configuration.AddAzureKeyVault(new Uri(configuration["AZURE_KEY_VAULT_ENDPOINT"] ?? ""), credential);
-
             services.AddDbContext<CatalogContext>(c =>
             {
-                var connectionString = configuration[configuration["AZURE_SQL_CATALOG_CONNECTION_STRING_KEY"] ?? ""];
+                var connectionString = configuration.GetConnectionString("CatalogConnection");
                 c.UseSqlServer(connectionString, sqlOptions => sqlOptions.EnableRetryOnFailure());
             });
             services.AddDbContext<AppIdentityDbContext>(options =>
             {
-                var connectionString = configuration[configuration["AZURE_SQL_IDENTITY_CONNECTION_STRING_KEY"] ?? ""];
+                var connectionString = configuration.GetConnectionString("IdentityConnection");
                 options.UseSqlServer(connectionString, sqlOptions => sqlOptions.EnableRetryOnFailure());
             });
         }

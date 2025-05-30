@@ -1,4 +1,7 @@
-﻿using BlazorShared;
+﻿using System;
+using Azure.Identity;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
+using BlazorShared;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Microsoft.AspNetCore.Builder;
@@ -20,6 +23,11 @@ builder.AddAspireServiceDefaults();
 
 builder.Services.AddFastEndpoints();
 
+var keyVaultEndpoint = builder.Configuration["VaultUri"];
+if (keyVaultEndpoint != null)
+{
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultEndpoint), new DefaultAzureCredential());
+}
 // Use to force loading of appsettings.json of test project
 builder.Configuration.AddConfigurationFile("appsettings.test.json");
 
@@ -43,6 +51,8 @@ builder.Services.Configure<BaseUrlConfiguration>(configSection);
 var baseUrlConfig = configSection.Get<BaseUrlConfiguration>();
 builder.Services.AddCorsPolicy(corsPolicy, baseUrlConfig!);
 
+builder.Services.AddOpenTelemetry().UseAzureMonitor();
+
 builder.Services.AddControllers();
 
 // TODO: Consider removing AutoMapper dependency (FastEndpoints already has its own Mapper support)
@@ -59,6 +69,12 @@ await app.SeedDatabaseAsync();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+}
+
+if (builder.Configuration.GetValue<bool>("FailOnStartup"))
+{
+    // you'll find it following https://learn.microsoft.com/en-us/aspnet/core/test/troubleshoot-azure-iis?view=aspnetcore-9.0#application-event-log-azure-app-service
+    throw new Exception("Cannot move further");
 }
 
 app.UseMiddleware<ExceptionMiddleware>();
